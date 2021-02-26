@@ -12,7 +12,7 @@ like 'read only').  For this demo use the latter, because it would be easier to 
 
 
 // moveCircle && '.move-circle' will be a standin for the larger visual circle with values .x and .y in center of circle
-// zoneRadius is the 
+// zoneRadius is the radius of the circle and should scale depending on device
 
 // define boundaries of the zone:
 var controlTop = moveCircle.y - zoneRadius;
@@ -26,19 +26,37 @@ var controlLeft = moveCircle.x - zoneRadius;
 $('.move-circle').each(function(){
       var el = $(this)[0];
       var direction = {
-          x: _this.moveDirectionX,
-          y: _this.moveDirectionY,
+          x: 0,
+          y: 0,
       };
 
       var mc = new Hammer(el);
       mc.on("press", function(e) {
-        // on touch get the x and y coordinates
+        // on touch get the x and y coordinates of the touch
         var touchX = e.center.x;
         var touchY = e.center.y;
         
+        // compare touch coordinates to circle center
+        var distanceX = touchX - moveCircle.x;
+        var distanceY = touchY - moveCirlce.y;
+
+        //determine distance from center and use as velocity magnitude
+        var magnitude = Math.sqrt((distanceX * distanceX) + (distanceY * distanceY)); // distance formula
+        var n_Magnitude = (magnitude > zoneRadius) ? 1:magnitude / zoneRadius; // normalized magnitude with max magnitude = 1;
+
+        // determine direction
+        direction.x = (magnitude == 0) ? 0:(Math.cos(Math.acos(distanceX / magnitude))) * n_Magnitude;
+        direction.y = (magnitude == 0) ? 0:(Math.sin(Math.asin(distanceY / magnitude))) * n_Magnitude;
+
+        // set direction
+        _this.moveDirectionX = direction.x;
+        _this.moveDirectionY = direction.y;
+
+
       });
 
       mc.on("pressup", function(e){
         _this.moveDirectionY = 0;
+        _this.moveDirectionX = 0;
       });
     });
