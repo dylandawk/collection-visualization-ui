@@ -72,18 +72,21 @@ $('.move-circle').each(function(){
 
     //screen position would be the converted 3D world point to screen point (Vector3)
     // possibly from here: https://stackoverflow.com/questions/11586527/converting-world-coordinates-to-screen-coordinates-in-three-js-using-projection
-    
     var screenPosition  = new THREE.Vector3();
+    
+    // screen center is the center of the viewport
     var screenCenter = new THREE.Vector3();
     screenCenter.x = window.innerWidth / 2;
     screenCenter.y = window.innerHeight / 2;
     screenCenter.z = 0;
 
-    // Distance offset of the indicators from the centre of the screen
-    screenBoundOffset = 0.9; // set to desire offset percentage 0-1
+    // Distance offset of the indicators from the center of the screen
+    screenBoundOffset = 0.9; // set to desired offset  (range: 0-1)
     var screenBounds = new THREE.Vector3();
     screenBounds = screenCenter * screenBoundOffset;
 
+
+    // Returns a Vector3 position and an angle (radians).
     function GetIndicatorPositionAndAngle(screenPosition, screenCenter, screenBounds){
         var differencePosition = screenPosition - screenCenter;
         if(differencePosition.z < 0) differencePosition.z *= -1;
@@ -92,11 +95,12 @@ $('.move-circle').each(function(){
         // Angle between the x-axis (top of screen) and a vector starting at 
         // zero(top right corner of screen) and terminating at differencePosition.
         var angle = Math.atan(differencePosition.y/differencePosition.x);
+        if(screenPosition.x < screenCenter.x) angle += Math.PI;
         // Slope of the line starting from zero and terminating at differencePosition.
         var slope = Math.tan(angle);
 
         // perform boundary checks
-        if(differencePosition.x > 0) {
+        if(differencePosition.x > 0 ) {
           differencePosition = new THREE.Vector3(screenBounds.x, screenBounds.x * slope, 0);
         } else {
           differencePosition = new THREE.Vector3(-screenBounds.x, -screenBounds.x * slope, 0);
@@ -109,8 +113,87 @@ $('.move-circle').each(function(){
 
         // Bring the ScreenPosition back to its original reference.
         screenPosition = differencePosition + screenCenter;
-        return screenPosition;
+        var positionAndAngle = {
+          position: screenPosition,
+          angle: angle
+        }
+        return positionAndAngle;
     }
 
 
-    
+/* ------------------------------------- TEST CODE FOR TIMELINE UI ------------------------------*/
+
+/*  
+Description of what I want to happen:
+1. User moves mouse over timeline key -> camera movement stops
+2. User hovers over timeline and depending on what year it is over the column changes color (#01D0D2)
+*/
+
+// Option #1
+/*This code changes the actual <li> element when the mouse moves over a certain year.
+ This would be placed in key.js possibly in Key.prototype.loadTimeline
+*/
+var options = this.opt;
+this.$el.on('mousemove', '.timeline-data', function(e) {
+  var x = e.pageX - $(this).offset().left;
+  var percentX = x / $(this).width();
+  var rangeLen = options.items.length;
+  var year = Math.round(percentX * rangeLen ) + options.items[0].year;
+  var $timelineData = $(this);
+  _.each(options.items, function(item){
+    var $yearBar = $timelineData.find('[data-year=' + item.year + ']');
+    if(year == item.year){
+      $yearBar.css({
+        'background': '#01D0D2',
+        'height' : "80%"
+      });
+    } else {
+      var p = MathUtil.norm(item.value, minValue.value, maxValue.value);
+      var itemHeight = Math.max(p * dataHeight, 1);
+      $yearBar.css({
+        'background': '#888',
+        'height' : `${itemHeight}px`
+      });
+    }
+  });
+});
+
+//Option #2
+
+// in main.css add
+/*
+.timeline-wrapper .hover-marker {
+  width: 4px;
+  height: 80%;
+  background: #01D0D2;
+  bottom: 0;
+}
+.timeline-wrapper .hover-marker-label {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  width: 100px;
+  margin-left: -50px;
+  text-align: center;
+  white-space: nowrap;
+}
+*/
+
+//when adding elements to html in Key.prototype.loadTimeline
+html += '<div class="hover-marker"><div class="hover-marker-label"></div></div>';
+
+_$el = this.$el;
+this.$hoverMarker = this.$el.find('.hover-marker').first();
+this.$hoverMarkerLabel = this.$marker.find('.hover-marker-label').first();
+var $hoverMarker
+
+this.$el.on('mousemove', '.timeline-wrapper', function(e) {
+  var x = e.pageX - $(this).offset().left;
+  var percentX = x / $(this).width();
+  var rangeLen = options.items.length;
+  var year = Math.round(percentX * rangeLen ) + options.items[0].year;
+  this.$hoverMarker = $(this).find('.hover-marker').first();
+  this.$hoverMarkerLabel = $(this).find('.hover-marker-label').first();
+  this.$hoverMarker.css('left', (percentX*100)+'%');
+  this.$hoverMarkerLabel.text(year);
+});

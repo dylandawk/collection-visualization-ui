@@ -73,12 +73,13 @@ var Key = (function() {
         _.each(this.opt.items, function(item){
           var p = MathUtil.norm(item.value, minValue.value, maxValue.value);
           var itemHeight = Math.max(p * dataHeight, 1);
-          html += '<li style="width: '+itemWidth+'%; height:'+itemHeight+'px"><span class="visuallyHidden">'+item.value+' items</span></li>';
+          html += '<li data-year="' + item.year + '" style="width: '+itemWidth+'%; height:'+itemHeight+'px"><span class="visuallyHidden">'+item.value+' items</span></li>';
         });
         html += '</ul>';
         html += '<div class="domain year-start">'+this.opt.items[0].year+'</div>';
         html += '<div class="domain year-end">'+this.opt.items[this.opt.items.length-1].year+'</div>';
         html += '<div class="marker"><div class="marker-label"></div></div>';
+        html += '<div class="hover-marker"><div class="hover-marker-label"></div></div>';
       html += '</div>';
     html += '</div>';
     this.$el = $(html);
@@ -86,6 +87,30 @@ var Key = (function() {
     this.$markerLabel = this.$marker.find('.marker-label').first();
     this.$parent.prepend(this.$el);
     this.dataHeight = this.$el.find('.timeline-data').first().height();
+
+
+    // Load listeners
+    // this.$el.on('click', '.timeline-data', function(e) {
+    //   var x = e.pageX - $(this).offset().left;
+    //     var percentX = x / $(this).width();
+    // });
+    
+    var options = this.opt;
+    this.$el.on('mousemove', '.timeline-wrapper', function(e) {
+      var x = e.pageX - $(this).offset().left;
+      var percentX = x / $(this).width();
+      var rangeLen = options.items.length;
+      var year = Math.round(percentX * rangeLen ) + options.items[0].year;
+      this.$hoverMarker = $(this).find('.hover-marker').first();
+      this.$hoverMarkerLabel = $(this).find('.hover-marker-label').first();
+      this.$hoverMarker.css({
+        'left': (percentX*100)+'%',
+        'height' : 80 + ''
+      });
+      this.$hoverMarkerLabel.text(year)
+      
+    });
+
   };
 
   Key.prototype.setBounds = function(bounds){
