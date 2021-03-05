@@ -94,7 +94,7 @@ var Key = (function() {
     //   var x = e.pageX - $(this).offset().left;
     //     var percentX = x / $(this).width();
     // });
-    
+
     var options = this.opt;
     this.$el.on('mousemove', '.timeline-wrapper', function(e) {
       var x = e.pageX - $(this).offset().left;
@@ -104,8 +104,7 @@ var Key = (function() {
       this.$hoverMarker = $(this).find('.hover-marker').first();
       this.$hoverMarkerLabel = $(this).find('.hover-marker-label').first();
       this.$hoverMarker.css({
-        'left': (percentX*100)+'%',
-        'height' : 80 + ''
+        'left': (percentX*100)+'%'
       });
       this.$hoverMarkerLabel.text(year)
       
