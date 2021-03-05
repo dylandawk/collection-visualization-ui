@@ -199,7 +199,7 @@
       "default": true,
       "radioItems": [
         {"name": "change-view", "value": "random", "label": "Random", "checked": true},
-        {"name": "", "value": "timeline", "label": "Timeline"},
+        {"name": "change-view", "value": "timeline", "label": "Timeline"},
         {"name": "change-view", "value": "map", "label": "Map"},
         {"name": "change-view", "value": "categoryTimeline", "label": "Regions over time"}
       ]
