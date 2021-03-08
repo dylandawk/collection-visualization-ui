@@ -102,7 +102,7 @@ var Key = (function() {
       var rangeLen = options.items.length;
       var year = Math.round(percentX * rangeLen ) + options.items[0].year;
       this.$hoverMarker = $(this).find('.hover-marker').first();
-      this.$hoverMarkerLabel = this.$hoverMarker.find('.hover-marker-label').first();
+      this.$hoverMarkerLabel = $(this).find('.hover-marker-label').first();
       this.$hoverMarker.css({
         'left': (percentX*100)+'%'
       });

@@ -47,6 +47,10 @@ var Controls = (function() {
     this.hotspotGroup = this.opt.hotspotGroup;
     this.raycaster = new THREE.Raycaster();
     this.hotspotSelected = false;
+
+    // for timeline control
+    this.timelineControl = false;
+    this.targetPositionZ = 0;
   };
 
   Controls.prototype.load = function(){
@@ -169,6 +173,19 @@ var Controls = (function() {
       _this.pointer.x = e.pageX;
       _this.pointer.y = e.pageY;
       _this.normalizePointer();
+    });
+
+    $doc.on("mouseup", '.timeline-wrapper', function(e){
+      var x = e.pageX - $(this).offset().left;
+      var percentX = x / $(this).width();
+      var rangeLen = _this.opt.years.items.length;
+      var year = Math.round(percentX * rangeLen ) + _this.opt.years.items[0].year;
+      console.log(year)
+      var yearNormalized = (year - _this.opt.years.items[0].year)/rangeLen;
+      var cameraZ = (yearNormalized * (_this.opt.bounds[3]-_this.opt.bounds[2])) + _this.opt.bounds[2];
+      _this.timelineControl = true;
+      _this.targetPositionZ = cameraZ
+      console.log(`target z: ${cameraZ}, current z: ${_this.camera.position.z}`);
     });
 
     if (isTouch) {
@@ -355,6 +372,20 @@ var Controls = (function() {
   Controls.prototype.updateAxis = function(axis){
     var moveDirection = this['moveDirection'+axis];
     var acceleration = false;
+
+    // timeline control
+    if(this.timelineControl){
+      let range = 1000;
+      if(Math.abs(this.targetPositionZ - this.camera.position.z) > range){
+        if(axis === 'Y'){
+          moveDirection = (this.targetPositionZ > this.camera.position.z) ? 1:-1;
+        }
+      } else {
+        this.timelineControl = false;
+        moveDirection = 0;
+      }
+      console.log(`target z: ${this.targetPositionZ} current z: ${this.camera.position.z} axis: ${axis}`);
+    } 
 
     // accelerate
     if (moveDirection !== 0 && Math.abs(this['velocity'+axis]) < this.opt.maxVelocity) {

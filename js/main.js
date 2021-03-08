@@ -13,11 +13,9 @@ var MainApp = (function() {
 
   MainApp.prototype.init = function(){
     var _this = this;
-
     this.clock = false;
     this.cameraTransitionStart = false;
     this.cameraTransitionEnd = false;
-
     this.loadScene();
 
     this.globalListener = new THREE.AudioListener();
@@ -107,9 +105,8 @@ var MainApp = (function() {
     // init camera positio
     this.camera.position.copy(this.collection.getDefaultCameraPosition());
     this.camera.lookAt(new THREE.Vector3(0,0,0));
-
     var view = this.collection.getCurrentView();
-    this.controls = new Controls(_.extend({}, this.collection.ui, {'menus': this.opt.menus, 'camera': this.camera, 'renderer': this.renderer, 'el': this.opt.el, 'bounds': view.bounds, 'hotspotGroup': this.collection.hotspotGroup}));
+    this.controls = new Controls(_.extend({}, this.collection.ui, {'menus': this.opt.menus, 'camera': this.camera, 'renderer': this.renderer, 'el': this.opt.el, 'bounds': view.bounds, 'hotspotGroup': this.collection.hotspotGroup, 'years' : this.opt.keys.years}));
 
     this.scene.add(this.collection.getThree());
 

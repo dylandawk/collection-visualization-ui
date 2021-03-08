@@ -129,7 +129,8 @@ Description of what I want to happen:
 2. User hovers over timeline and depending on what year it is over the column changes color (#01D0D2)
 */
 
-// Option #1
+/*------Option #1-------*/
+
 /*This code changes the actual <li> element when the mouse moves over a certain year.
  This would be placed in key.js possibly in Key.prototype.loadTimeline
 */
@@ -158,7 +159,7 @@ this.$el.on('mousemove', '.timeline-data', function(e) {
   });
 });
 
-//Option #2
+/*------Option #2-------*/
 
 // in main.css add
 /*
@@ -182,11 +183,8 @@ this.$el.on('mousemove', '.timeline-data', function(e) {
 //when adding elements to html in Key.prototype.loadTimeline
 html += '<div class="hover-marker"><div class="hover-marker-label"></div></div>';
 
-_$el = this.$el;
-this.$hoverMarker = this.$el.find('.hover-marker').first();
-this.$hoverMarkerLabel = this.$marker.find('.hover-marker-label').first();
-var $hoverMarker
-
+// at end of Key.prototype.loadTimeline
+var options = this.opt;
 this.$el.on('mousemove', '.timeline-wrapper', function(e) {
   var x = e.pageX - $(this).offset().left;
   var percentX = x / $(this).width();
@@ -194,6 +192,49 @@ this.$el.on('mousemove', '.timeline-wrapper', function(e) {
   var year = Math.round(percentX * rangeLen ) + options.items[0].year;
   this.$hoverMarker = $(this).find('.hover-marker').first();
   this.$hoverMarkerLabel = $(this).find('.hover-marker-label').first();
-  this.$hoverMarker.css('left', (percentX*100)+'%');
-  this.$hoverMarkerLabel.text(year);
+  this.$hoverMarker.css({
+    'left': (percentX*100)+'%'
+  });
+  this.$hoverMarkerLabel.text(year)
+  
 });
+
+
+// For Camera movement
+
+// in main.js
+// add as option extension to new instance of Control (line 109)
+'years' : this.opt.keys.years
+
+// in 'controls.js'
+// add to Controls.prototype.init
+this.timelineControl = false;
+this.targetPositionZ = 0;
+
+// add listener to Controls.prototype.loadListeners
+$doc.on("mouseup", '.timeline-wrapper', function(e){
+  var x = e.pageX - $(this).offset().left;
+  var percentX = x / $(this).width();
+  var rangeLen = _this.opt.years.items.length;
+  var year = Math.round(percentX * rangeLen ) + _this.opt.years.items[0].year;
+  var yearNormalized = (year - _this.opt.years.items[0].year)/rangeLen;
+
+  // find target camera position given the corresponding year
+  var cameraZ = (yearNormalized * (_this.opt.bounds[3]-_this.opt.bounds[2])) + _this.opt.bounds[2];
+  _this.timelineControl = true;
+  _this.targetPositionZ = cameraZ
+});
+
+
+// add to Controls.prototype.updateAxis
+if(this.timelineControl){
+  let range = 1000; // range such that when camera is in close range of target year decceleration stops at year
+  if(Math.abs(this.targetPositionZ - this.camera.position.z) > range){
+    if(axis === 'Y'){
+      moveDirection = (this.targetPositionZ > this.camera.position.z) ? 1:-1;
+    }
+  } else {
+    this.timelineControl = false;
+    moveDirection = 0;
+  }
+} 
