@@ -168,6 +168,8 @@ this.$el.on('mousemove', '.timeline-data', function(e) {
   height: 80%;
   background: #01D0D2;
   bottom: 0;
+  position: absolute;
+  margin-left: -2px;
 }
 .timeline-wrapper .hover-marker-label {
   position: absolute;
