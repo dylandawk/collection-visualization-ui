@@ -48,9 +48,10 @@ var Controls = (function() {
     this.raycaster = new THREE.Raycaster();
     this.hotspotSelected = false;
 
-    // for timeline control
-    this.timelineControl = false;
+    // for Key control
+    this.keyControl = false;
     this.targetPositionZ = 0;
+    this.targetPositionX = 0;
   };
 
   Controls.prototype.load = function(){
@@ -183,10 +184,23 @@ var Controls = (function() {
       console.log(year)
       var yearNormalized = (year - _this.opt.years.items[0].year)/rangeLen;
       var cameraZ = (yearNormalized * (_this.opt.bounds[3]-_this.opt.bounds[2])) + _this.opt.bounds[2];
-      _this.timelineControl = true;
+      _this.keyControl = true;
       _this.targetPositionZ = cameraZ
       console.log(`target z: ${cameraZ}, current z: ${_this.camera.position.z}`);
     });
+
+    $doc.on("mouseup", '.map-wrapper', function(e){
+      var x = e.pageX - $(this).offset().left;
+      var y = e.pageY - $(this).offset().top;
+      var imageHeight = $(this).find('img').first().height();
+      var percentX = MathUtil.clamp(x / $(this).width(), 0, 1);
+      var percentY = MathUtil.clamp(y / imageHeight, 0, 1);
+      var cameraX = (percentX * (_this.opt.bounds[1] - _this.opt.bounds[0])) + _this.opt.bounds[0];
+      var cameraZ = (percentY * (_this.opt.bounds[3] - _this.opt.bounds[2])) + _this.opt.bounds[2];
+      _this.targetPositionZ = cameraZ;
+      _this.targetPositionX = cameraX;
+      console.log(`camera x: ${cameraX} camera z:${cameraZ}`);
+    })
 
     if (isTouch) {
       var el = this.$el[0];
@@ -373,17 +387,18 @@ var Controls = (function() {
     var moveDirection = this['moveDirection'+axis];
     var acceleration = false;
 
-    // timeline control
-    if(this.timelineControl){
+    // key control
+    if(this.keyControl){
       let range = 1000;
       if(Math.abs(this.targetPositionZ - this.camera.position.z) > range){
         if(axis === 'Y'){
           moveDirection = (this.targetPositionZ > this.camera.position.z) ? 1:-1;
         }
       } else {
-        this.timelineControl = false;
+        this.keyControl = false;
         moveDirection = 0;
       }
+      // if(Math.abs(this.))
       console.log(`target z: ${this.targetPositionZ} current z: ${this.camera.position.z} axis: ${axis}`);
     } 
 

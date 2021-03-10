@@ -126,7 +126,8 @@ $('.move-circle').each(function(){
 /*  
 Description of what I want to happen:
 1. User moves mouse over timeline key -> camera movement stops
-2. User hovers over timeline and depending on what year it is over the column changes color (#01D0D2)
+2. User hovers over timeline and separate marker shows what year to move to
+3. User clicks or touches year and camera moves to year
 */
 
 /*------Option #1-------*/
@@ -240,3 +241,33 @@ if(this.timelineControl){
     moveDirection = 0;
   }
 } 
+
+/* ------------------------------------- TEST CODE FOR MAP UI ------------------------------*/
+
+/* This is for creating an interactive Map UI 
+
+Description of what I want to happen:
+1. User moves mouse over map key, hover marker moves with it, when mouse off, it disappears
+2. User hovers over timeline and separate marker shows what year to move to
+3. User clicks or touches location and camera moves to spot
+*/
+
+// in main.css
+/*
+.map.key .hover-marker {
+  width: 20px;
+  height: 20px;
+  margin-left: -10px;
+  margin-top: -10px;
+  border: 3px solid #01D0D2;
+  border-radius: 50%;
+  opacity:0;
+  position: absolute;
+}
+*/
+
+// in key.js
+
+//in Key.prototype.loadMap
+html += '<div class="hover-marker"></div>';
+

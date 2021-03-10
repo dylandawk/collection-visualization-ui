@@ -54,11 +54,39 @@ var Key = (function() {
       html += '<div class="map-wrapper">';
         html += '<img src="'+this.opt.imageDir+this.opt.image+'" alt="Map of the world with country outlines" />';
         html += '<div class="marker"></div>';
+        html += '<div class="hover-marker"></div>';
       html += '</div>';
     html += '</div>';
     this.$el = $(html);
     this.$marker = this.$el.find('.marker').first();
     this.$parent.prepend(this.$el);
+
+    // load listeners
+    this.$el.on('mouseenter', '.map-wrapper', function(e){
+      this.$hoverMarker = $(this).find('.hover-marker').first();
+      this.$hoverMarker.css({
+        'opacity' : 100
+      });
+      $(this.$hoverMarker).fadeIn();
+    });
+    this.$el.on('mouseleave', '.map-wrapper', function(e){
+      this.$hoverMarker = $(this).find('.hover-marker').first();
+      $(this.$hoverMarker).fadeOut();
+    });
+
+    this.$el.on('mousemove', '.map-wrapper', function(e){
+      var x = e.pageX - $(this).offset().left;
+      var y = e.pageY - $(this).offset().top;
+      var imageHeight = $(this).find('img').first().height();
+      var percentX = MathUtil.clamp(x / $(this).width(), 0, 1);
+      var percentY = MathUtil.clamp(y / imageHeight, 0, 1);
+      this.$hoverMarker = $(this).find('.hover-marker').first();
+      this.$hoverMarker.css({
+        'left': (percentX * 100) + '%',
+        'top' : (percentY * 100) + '%'  
+      });   
+      //console.log(`percent X: ${percentX}`);
+    })
   };
 
   Key.prototype.loadTimeline = function(){
