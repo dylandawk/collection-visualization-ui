@@ -53,6 +53,11 @@ var Controls = (function() {
     this.lat = 0;
     this.lon = 0;
     this.onResize();
+
+    //for key controls
+    this.keyControl = false;
+    this.targetPositionZ = 0;
+    this.targetPositionX = 0;
   };
 
   Controls.prototype.centerPointer = function(){
