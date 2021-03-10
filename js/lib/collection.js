@@ -6,6 +6,7 @@ var Collection = (function() {
     var defaults = {
       'onLoadEnd': function(){ console.log('Loading finished'); },
       'onLoadProgress': function(){ console.log('Loading progress...') },
+      'zoomInDistance': 30, // how far away camera should be when it zooms into an item
       'seedString': 'museum' // seed for randomizing positions
     };
     this.opt = _.extend({}, defaults, config);
@@ -15,11 +16,14 @@ var Collection = (function() {
   Collection.prototype.init = function(){
     this.camera = this.opt.camera;
     this.listener = this.opt.listener;
-    this.currentViewKey = 'random';
+    this.controls = false;
+    this.currentViewKey = 'randomSphere';
     this.minAlpha = this.opt.ui.minAlpha;
 
-    this.content = this.opt.content;
     this.ui = this.opt.ui;
+
+    this.itemManager = new ItemDetailManager(this.opt.metadata);
+    this.storyManager = new StoryManager({"stories": this.opt.stories});
 
     var views = this.opt.views;
     _.each(views, function(view, key){
@@ -28,14 +32,15 @@ var Collection = (function() {
     this.views = views;
 
     this.labelSets = {};
-    this.overlays = {};
+    this.overlays = [];
     this.soundSets = {};
   };
 
-  Collection.prototype.deselectHotspots = function(){
-    _.each(this.stories, function(story, contentKey){
-      story.deselectHotspots();
-    });
+  Collection.prototype.deselectActiveItem = function(){
+    var flyToLastPosition = true;
+    this.controls && this.controls.releaseAnchor(flyToLastPosition);
+    var itemIndex = this.itemManager.releaseSelectedItem();
+    this.updateItemAlpha(itemIndex, 1, 10); // show the current item
   };
 
   Collection.prototype.filterBySet = function(setKey, transitionDuration){
@@ -92,16 +97,18 @@ var Collection = (function() {
     // load labels
     totalToLoad += _.keys(this.opt.labels).length;
     // load overlays
-    totalToLoad += 1;
+    totalToLoad += _.reduce(this.views, function(memo, view){
+      if (_.has(view, 'overlays')) return memo + view.overlays.length;
+      else return memo;
+    }, 0);
     // load sounds
-    totalToLoad += _.keys(this.opt.sounds).length;
+    // totalToLoad += _.keys(this.opt.sounds).length;
     return totalToLoad;
   };
 
   Collection.prototype.load = function(){
     var _this = this;
 
-    this.loadContent();
     this.loadKeys();
 
     $.when(
@@ -110,43 +117,13 @@ var Collection = (function() {
       this.loadOverlays(),
       this.loadPositions(),
       this.loadSets(),
-      this.loadSounds(),
+      // this.loadSounds(),
       this.loadTextures()
 
     ).done(function(){
       _this.onReady();
       _this.opt.onLoadEnd();
     });
-  };
-
-  Collection.prototype.loadContent = function(){
-    var _this = this;
-    var stories = {};
-    var views = this.opt.views;
-
-    var markerTexture = new THREE.TextureLoader().load("../../img/compass_red.png");
-
-    _.each(this.content, function(content, contentKey){
-      if (!content.html) return;
-      var hotspots = {};
-      _.each(views, function(view, viewKey){
-        if (!view.hotspots) return;
-        _.each(view.hotspots, function(hotspot, hotspotKey){
-          if (hotspotKey == contentKey) {
-            hotspots[viewKey] = _.extend({}, view, hotspot);
-          }
-        });
-      });
-      if (_.isEmpty(hotspots)) {
-        console.log('No hotspots found for '+contentKey);
-        return;
-      }
-      var story = new Story(_.extend({}, content, {'hotspots': hotspots, 'markerTexture': markerTexture}));
-      stories[contentKey] = story;
-    });
-
-    this.stories = stories;
-    console.log('Loaded content.');
   };
 
   Collection.prototype.loadKeys = function(){
@@ -236,20 +213,23 @@ var Collection = (function() {
 
   Collection.prototype.loadListeners = function(){
     var _this = this;
+    var $doc = $(document);
 
-    $(document).on('change-view', function(e, newValue, duration) {
+    $doc.on('change-view', function(e, newValue, duration) {
       console.log("Changing view to "+newValue);
       _this.updateView(newValue, duration);
     });
 
-    $(document).on('select-hotspot', function(e, uuid){
-      console.log('Select hotspot: '+uuid);
-      _this.selectHotspot(uuid);
+    $doc.keypress(function(e){
+      if (e.key === 'x') {
+        e.preventDefault()
+        _this.deselectActiveItem();
+      }
     });
 
-    $(document).on('deselect-hotspots', function(e, value){
-      console.log('Deselect hotspots');
-      _this.deselectHotspots();
+    $('.item-metadata-close').on('click', function(e){
+      e.preventDefault()
+      _this.deselectActiveItem();
     });
   };
 
@@ -266,21 +246,31 @@ var Collection = (function() {
   Collection.prototype.loadOverlays = function(){
     var _this = this;
     var overlayPromises = [];
-    var overlays = {};
-    _.each(this.opt.overlays, function(options, key){
-      var overlay = new Overlay(options);
-      var deferred = overlay.load();
-      overlays[key] = overlay;
-      overlayPromises.push(deferred);
+    var overlays = [];
+
+    _.each(this.views, function(view, key){
+      if (!_.has(view, 'overlays')) {
+        _this.views[key].overlays = [];
+        return;
+      }
+      var viewOverlays = [];
+      _.each(view.overlays, function(options){
+        var overlay = new Overlay(options);
+        var deferred = overlay.load();
+        viewOverlays.push(overlay);
+        overlays.push(overlay);
+        overlayPromises.push(deferred);
+      });
+      _this.views[key].overlays = viewOverlays;
     });
 
+    this.overlays = overlays;
     var deferred = $.Deferred();
     if (overlayPromises.length < 1) deferred.resolve();
     else {
       $.when.apply(null, overlayPromises).done(function() {
         _this.opt.onLoadProgress();
         console.log('Loaded overlays');
-        _this.overlays = overlays;
         deferred.resolve();
       });
     }
@@ -429,10 +419,24 @@ var Collection = (function() {
     return deferred;
   };
 
+  Collection.prototype.onClickCanvas = function(pointer, npointer){
+    var now = new Date().getTime();
+    this.storyManager.update(now, npointer, this.camera);
+    this.itemManager.update(now, npointer);
+
+    // trigger a story to open
+    var openedStoryKey = this.triggerStory();
+
+    // trigger an item if user did not click on story
+    if (openedStoryKey===false) {
+      this.triggerItem();
+    }
+  };
+
   Collection.prototype.onFinishedStart = function(){
-    // _.each(this.soundSets, function(soundSet, key){
-    //   soundSet.active = true;
-    // });
+    _.each(this.soundSets, function(soundSet, key){
+      soundSet.active = true;
+    });
   };
 
   Collection.prototype.onReady = function(){
@@ -473,29 +477,29 @@ var Collection = (function() {
     });
     container.add(pointCloud.getThree());
     this.pointCloud = pointCloud;
-    this.raycaster = new Raycaster({
+    var raycaster = new Raycaster({
       'camera': this.camera,
       'points': pointCloud
     });
-    container.add(this.raycaster.getThree());
+    this.itemManager.setRaycaster(raycaster);
+    this.itemManager.updatePositions(pointCloud.positionArr, 0);
+    this.storyManager.updatePositions(pointCloud.positionArr, 0);
+    container.add(raycaster.getThree());
 
     _.each(this.labelSets, function(labelSet, key){
       container.add(labelSet.getThree());
     });
 
-    _.each(this.overlays, function(overlay, key){
+    _.each(this.overlays, function(overlay){
       container.add(overlay.getThree());
     });
 
     var hotspotGroup = new THREE.Group();
-    _.each(this.stories, function(story, contentKey){
-      story.updateView(_this.currentViewKey);
-      _.each(story.hotspots, function(hotspot, viewKey){
-        hotspotGroup.add(hotspot.object);
-      });
+    this.storyManager.updateView(_this.currentViewKey);
+    _.each(this.storyManager.stories, function(story, contentKey){
+      hotspotGroup.add(story.hotspot.object);
     });
     container.add(hotspotGroup);
-    this.hotspotGroup = hotspotGroup;
 
     this.container = container;
 
@@ -507,38 +511,34 @@ var Collection = (function() {
     this.updateAlpha(false, 1.0, transitionDuration);
   };
 
-  Collection.prototype.selectHotspot = function(uuid){
-    _.each(this.stories, function(story, contentKey){
-      story.selectHotspot(uuid);
+  Collection.prototype.setControls = function(controls){
+    this.controls = controls;
+  };
+
+  Collection.prototype.triggerItem = function(){
+    var _this = this;
+    var triggeredItemIndex = this.itemManager.triggerSelectedItem();
+
+    if (triggeredItemIndex===false) return;
+
+    var position = this.itemManager.itemPositions[triggeredItemIndex];
+    var anchorToPosition = true;
+    this.controls.flyToOrbit(position, this.opt.zoomInDistance, this.opt.ui.zoomInTransitionDuration, anchorToPosition, function(){
+      var finishedLoadingImage = _this.itemManager.onFlyFinished(triggeredItemIndex);
+      $.when(finishedLoadingImage).done(function(){
+        _this.updateItemAlpha(triggeredItemIndex, 0); // hide the current item
+      });
     });
   };
 
-  Collection.prototype.triggerSelectedHotspot = function(forceClose){
+  Collection.prototype.triggerStory = function(forceClose){
     var _this = this;
-    var openedStoryKey = false;
-    var closedStoryKey = false;
 
-    _.each(this.stories, function(story, contentKey){
-      // force everything to close
-      if (forceClose && story.visible) {
-        story.hide();
-        if (closedStoryKey === false) closedStoryKey = contentKey;
-        return;
-      }
-      // show a story
-      if (story.isSelected() & !story.visible) {
-        story.show();
-        if (openedStoryKey === false) openedStoryKey = contentKey;
-        return;
-      }
-      // hide a story
-      if (!story.isSelected() && story.visible) {
-        story.hide();
-        if (closedStoryKey === false) closedStoryKey = contentKey;
-        return;
-      }
-    });
+    var resp = this.storyManager.triggerSelectedHotspot(forceClose);
+    var openedStoryKey = resp.openedStoryKey;
+    var closedStoryKey = resp.closedStoryKey;
 
+    // apply filters accordingly
     var transitionDuration = Math.round(this.opt.ui.transitionDuration / 2);
     var view = this.views[this.currentViewKey];
     if (openedStoryKey !== false) {
@@ -546,7 +546,7 @@ var Collection = (function() {
       this.filterBySet(openedStoryKey, transitionDuration);
       // hide hotspots
       _.each(this.stories, function(story, key){
-        story.hideHotspots();
+        story.hideHotspot();
       });
       // adjust positions
       if (this.updatePositionTimeout) clearTimeout(this.updatePositionTimeout);
@@ -555,18 +555,15 @@ var Collection = (function() {
       }, transitionDuration);
 
     } else if (closedStoryKey !== false) {
-      // adjust positions
-      this.updatePositions(view, transitionDuration, 1.0);
       // reset filters
       this.resetFilters(transitionDuration);
+      // adjust positions
+      this.updatePositions(view, transitionDuration, 1.0);
       // show hotspots
-      var viewContent = view.content ? view.content : [];
-      _.each(this.stories, function(story, key){
-        if (_.indexOf(viewContent, key) >= 0) story.updateView(view.key);
-      });
-
+      this.storyManager.updateView(view.key)
     }
 
+    return openedStoryKey;
   };
 
   Collection.prototype.update = function(now, pointerPosition){
@@ -590,7 +587,8 @@ var Collection = (function() {
       soundSet.update(now);
     });
 
-    this.raycaster.update(pointerPosition);
+    this.storyManager.update(now, pointerPosition, this.camera);
+    this.itemManager.update(now, pointerPosition);
   };
 
   Collection.prototype.updateAlpha = function(fromAlpha, toAlpha, transitionDuration){
@@ -599,7 +597,16 @@ var Collection = (function() {
     var _this = this;
     _.each(this.sets, function(set){
       set.updateAlpha(fromAlpha, toAlpha, transitionDuration);
-    })
+    });
+
+    this.pointCloud.updateAlpha(fromAlpha, toAlpha, transitionDuration)
+  };
+
+  Collection.prototype.updateItemAlpha = function(itemIndex, alpha, transitionDuration){
+    transitionDuration = transitionDuration===undefined ? this.opt.ui.transitionDuration : transitionDuration;
+    var toAlphaValues = this.pointCloud.alphaArr;
+    toAlphaValues[itemIndex] = alpha;
+    this.updateAlpha(false, toAlphaValues, transitionDuration);
   };
 
   Collection.prototype.updatePositions = function(newView, transitionDuration, multiplier) {
@@ -613,8 +620,14 @@ var Collection = (function() {
     });
     // update point cloud for raycasting
     globalRandomSeeder = new Math.seedrandom(this.opt.seedString);
-    this.pointCloud.updatePositions(newPositions, transitionDuration, multiplier);
-    this.raycaster.hide(transitionDuration);
+    var positionArr = this.pointCloud.updatePositions(newPositions, transitionDuration, multiplier);
+    this.itemManager.hide(transitionDuration);
+
+    // console.log(positionArr);
+
+    // update stories/items
+    this.storyManager.updatePositions(positionArr, transitionDuration);
+    this.itemManager.updatePositions(positionArr, transitionDuration);
   };
 
   Collection.prototype.updateView = function(newValue, transitionDuration){
@@ -667,16 +680,16 @@ var Collection = (function() {
     });
 
     // update overlays
-    var viewOverlays = newView.overlays ? newView.overlays : [];
-    _.each(this.overlays, function(overlay, key){
-      if (hide && overlay.visible) {
-        overlay.hide(transitionDuration);
-        return;
-      } else if (hide) return;
-      var valid = _.indexOf(viewOverlays, key) >= 0;
-      if (valid && overlay.visible) return false;
-      else if (valid) overlay.show(transitionDuration);
-      else overlay.hide(transitionDuration);
+    _.each(this.views, function(view, key){
+      if (key === newView.key) {
+        _.each(view.overlays, function(overlay){
+          if (!overlay.visible) overlay.show(transitionDuration);
+        });
+      } else {
+        _.each(view.overlays, function(overlay){
+          if (overlay.visible) overlay.hide(transitionDuration);
+        });
+      }
     });
 
     // update sounds
@@ -686,27 +699,13 @@ var Collection = (function() {
         soundSet.active = false;
         return;
       } else if (hide) return;
-      var valid = _.indexOf(viewLabels, key) >= 0;
+      var valid = _.indexOf(viewSounds, key) >= 0;
       if (valid) soundSet.active = true;
       else soundSet.active = false;
     });
 
     // update stories
-    var viewContent = newView.content ? newView.content : [];
-    _.each(this.stories, function(story, key){
-      if (hide) {
-        story.hide();
-        story.hideHotspots();
-        return;
-      }
-      var valid = _.indexOf(viewContent, key) >= 0;
-      if (valid) {
-        story.updateView(newView.key);
-      } else {
-        story.hide();
-        story.hideHotspots();
-      }
-    });
+    this.storyManager.updateView(newView.key);
 
     // TODO: update menus
 

@@ -15,12 +15,12 @@ import lib.math_utils as mu
 
 # input
 parser = argparse.ArgumentParser()
-parser.add_argument("-config", dest="CONFIG_FILE", default="config-sample.json", help="Config file")
+parser.add_argument("-config", dest="CONFIG_FILE", default="config-sample.yml", help="Config file")
 a = parser.parse_args()
 
-config = io.readJSON(a.CONFIG_FILE)
-configViews = config["views"]
-layouts = lu.unique([view["layout"] for key, view in configViews.items()])
+config = tu.loadConfig(a.CONFIG_FILE)
+configViews = config["visualizations"]
+layouts = configViews.keys()
 
 PRECISION = 5
 OUTPUT_DIR = "apps/{appname}/".format(appname=config["name"])
@@ -34,7 +34,7 @@ io.makeDirectories([OUTPUT_POS_DIR, CONFIG_FILE])
 # Remove existing data
 io.removeFiles(OUTPUT_POS_DIR + "*.json")
 
-sets, items = tu.getItems(config)
+items, categories = tu.getItems(config)
 itemCount = len(items)
 dimensions = 3
 
@@ -55,8 +55,8 @@ def getTimelineTunnelLayout(userOptions={}):
     dimensions = 3
 
     if yearCol not in items[0]:
-        print("Could not find column %s in items, please add this column to metadata cols with 'type' = 'int'" % yearCol)
-        sys.exit()
+        print("`dateColumn` needs to be set in config yml to support timelineTunnel layout")
+        return (False, False)
 
     years = [item[yearCol] for item in items]
     minYear = min(years)
@@ -88,7 +88,7 @@ def getTimelineTunnelLayout(userOptions={}):
 
 def getSphereCategoryTimelineLayout(userOptions={}):
     global items
-    global sets
+    global categories
     cfg = {
         "layout": "spheres"
     }
@@ -96,14 +96,14 @@ def getSphereCategoryTimelineLayout(userOptions={}):
     categoryCol = "category"
     yearCol = "year"
     if yearCol not in items[0]:
-        print("Could not find column %s in items, please add this column to metadata cols with 'type' = 'int'" % yearCol)
-        sys.exit()
-    if categoryCol not in sets:
-        print("Could not find column %s in sets, please add this column to metadata cols with 'asIndex' = true" % categoryCol)
-        sys.exit()
+        print("`dateColumn` needs to be set in config yml to support timelineTracks layout")
+        return (False, False)
 
-    categorySet = sets[categoryCol]
-    categoryCount = len(categorySet)
+    if categoryCol not in items[0]:
+        print("`groupByColumn` needs to be set in config yml to support timelineTracks layout")
+        return (False, False)
+
+    categoryCount = len(categories)
     dimensions = 3
     groups = lu.groupList(items, yearCol) # group by year
     groups = sorted(groups, key=lambda group: group[yearCol])
@@ -128,9 +128,9 @@ def getSphereCategoryTimelineLayout(userOptions={}):
         z = mu.norm(group[yearCol], (minYear, maxYear)) + nUnit*0.5 # place spheres in the center of the year
         subgroups = group["categoryGroups"]
         subgroupLookup = lu.createLookup(subgroups, categoryCol)
-        for j, category in enumerate(categorySet):
+        for j, category in enumerate(categories):
             x = 1.0 - 1.0 * j / (categoryCount-1)
-            categoryKey = str(j)
+            categoryKey = category["text"]
             if categoryKey in subgroupLookup:
                 subgroup = subgroupLookup[categoryKey]
                 y = mu.norm(subgroup["count"], (minCount, maxCount))
@@ -142,6 +142,7 @@ def getSphereCategoryTimelineLayout(userOptions={}):
                     values[itemIndex*dimensions+2] = round(z, PRECISION)
 
     values = values.tolist()
+
     return (cfg, values)
 
 def getGeographyBarsLayout(userOptions={}):
@@ -153,8 +154,8 @@ def getGeographyBarsLayout(userOptions={}):
     latCol = "lat"
     lonCol = "lon"
     if latCol not in items[0] or lonCol not in items[0]:
-        print("Could not find column (%s, %s) in items, please add these columns to metadata cols with 'type' = 'float'" % (lonCol, latCol))
-        sys.exit()
+        print("`latitudeColumn` and `latitudeColumn` need to be set in config yml to support geographyBars layout")
+        return (False, False)
 
     # create unique key for lat lon
     for i, item in enumerate(items):
@@ -191,7 +192,7 @@ for layout in layouts:
     if layout == "timelineTunnel":
         layoutConfig, layoutData = getTimelineTunnelLayout()
 
-    elif layout == "sphereCategoryTimeline":
+    elif layout == "timelineTracks":
         layoutConfig, layoutData = getSphereCategoryTimelineLayout()
 
     elif layout == "geographyBars":
@@ -199,17 +200,18 @@ for layout in layouts:
 
     else:
         layout = "randomSphere"
-        layoutData = None
+        layoutData = False
         layoutConfig["layout"] = "spheres"
         print("Using default layout %s" % layout)
 
     # Write position file
-    if layoutData is not None:
+    if layoutData is not False:
         posOutFile = OUTPUT_POS_DIR + layout + ".json"
         io.writeJSON(posOutFile, layoutData)
         layoutConfig["src"] = OUTPUT_POS_DIR_REL + layout + ".json"
 
-    jsonPositions[layout] = layoutConfig
+    if layoutConfig is not False:
+        jsonPositions[layout] = layoutConfig
 
 # Write config file
 outjson = {

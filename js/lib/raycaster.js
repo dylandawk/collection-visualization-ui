@@ -7,6 +7,7 @@ var Raycaster = (function() {
       highlightWidth: 16,
       highlightThickness: 2,
       highlightColor: 0xf57542,
+      near: 0.001,
       far: 400,
       points: false, // required!
       camera: false // required!
@@ -25,6 +26,7 @@ var Raycaster = (function() {
     var innerRadius = diagonal * 0.5;
 
     var raycaster = new THREE.Raycaster();
+    raycaster.near = this.opt.near;
     raycaster.far = this.opt.far;
     raycaster.params.Points.threshold = innerRadius;
     raycaster.layers.set( Raycaster.LAYER_NUMBER );
@@ -44,7 +46,8 @@ var Raycaster = (function() {
     container.visible = false;
     this.highlighter = container;
 
-    this.highlightedObjectIndex = false;
+    this.activeObjectIndex = -1;
+    this.highlightedObjectIndex = -1;
     this.isHidden = false;
   };
 
@@ -55,12 +58,13 @@ var Raycaster = (function() {
 
     this.raycaster.setFromCamera( position, camera );
     var intersections = this.raycaster.intersectObjects( objects );
-    var intersectionIndex = intersections.length > 0 ? intersections[ 0 ].index : false; // return the object index
+    var intersectionIndex = intersections.length > 0 ? intersections[ 0 ].index : -1; // return the object index
 
     if (intersectionIndex === this.highlightedObjectIndex) return;
     this.highlightedObjectIndex = intersectionIndex;
+    var isCurrentActiveIndex = this.activeObjectIndex === intersectionIndex;
 
-    if (intersectionIndex === false) {
+    if (intersectionIndex < 0 || isCurrentActiveIndex) {
       this.highlighter.visible = false;
 
     } else {
@@ -75,6 +79,11 @@ var Raycaster = (function() {
     }
 
     renderNeeded = true;
+  };
+
+  Raycaster.prototype.getActiveItemIndex = function(){
+    if (!this.highlighter.visible) return false;
+    return this.highlightedObjectIndex;
   };
 
   Raycaster.prototype.getThree = function(){
