@@ -213,6 +213,7 @@ this.$el.on('mousemove', '.timeline-wrapper', function(e) {
 // add to Controls.prototype.init
 this.timelineControl = false;
 this.targetPositionZ = 0;
+this.targetPositionX = 0;
 
 // add listener to Controls.prototype.loadListeners
 $doc.on("mouseup", '.timeline-wrapper', function(e){
