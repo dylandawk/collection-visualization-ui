@@ -4,8 +4,11 @@ body {
   font: 18px "Work Sans";
 }
 
- p{
+p{
   font-weight: 200;
+}
+h1{
+  font-weight: 400;
 }
 .visuallyHidden {
   position: absolute !important;
@@ -265,39 +268,63 @@ input[type="radio"]:checked ~ .checked-bg {
   width: 100%;
   height: 100%;
   z-index: 10000;
-  background: rgba(0,0,0,0.8);
+  background: rgba(0,0,0,0.3);
 }
 .instructions h1 {
   font-size: 1.8rem;
 }
 .instructions ul {
   list-style: none;
+  font-weight: 200;
   padding: 0;
   margin: 0;
 }
 .instructions li {
   padding: 1rem 0;
 }
+.instructions .image-container{
+  float:left;
+  width: 42%;
+  padding-right: 25px;
+  padding-bottom: 20px;
+  box-sizing: border-box;
+}
+.instructions .image-row::after{
+  content: "";
+  clear: both;
+  display: table;
+}
 .instructions strong {
-  background: var(--notice-color);
-  color: var(--bg-color);
-  padding: 3px 6px;
-  border-radius: 4px;
-  margin: 0 4px;
-  display: inline-block;
-  vertical-align: middle;
+  color: #91EFF0;
+  font-weight: 300;
 }
 .instructions button {
+  position: absolute;
+  float: right;
+  width: 40px;
+  height: 40px;
+  line-height: 40px;
+  vertical-align: middle;
+  right: 1rem;
+  top: 1rem;
+  margin: 0;
   font-size: 2rem;
-  padding: 5px 20px;
+  font-weight: 100;
+  background-color: transparent;
+  outline:none;
 }
 .instructions > div {
-  max-width: 800px;
+  border-style: solid;
+  border-width: 1px;
+  border-color:rgba(255, 255, 255, 0.2);
+  background: rgba(0,0,0,0.8);
+  max-width: 500px;
   margin: 0 auto;
+  overflow:auto;
   box-sizing: border-box;
-  padding: 20px;
+  padding: 50px;
   position: relative;
-  top: 50%;
+  top: 40%;
   transform: translateY(-50%);
 }
 .instructions.active {
