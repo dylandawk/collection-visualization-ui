@@ -7,20 +7,46 @@
   <meta name="description" content="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
+  <!-- fonts -->
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Belleza&family=Work+Sans:wght@100;200;300;400;500;600;700;800&display=swap">
+  <!---->
+
   <link rel="stylesheet" href="../../css/vendor/normalize.css">
   <link rel="stylesheet" href="../../css/vars.css">
   <link rel="stylesheet" href="../../css/main.css">
   <link rel="stylesheet" href="css/app.css">
+
 </head>
 
 <body>
 
   <div id="app" class="app is-loading">
     <div class="loading">
-      <h2>Loading assets and data...</h2>
-      <div class="loading-bar">
-        <div class="loading-progress"></div>
-        <div class="loading-text">0%</div>
+      <h1>
+        Collection<span class="scope">scope</span>
+      </h1>
+      <p>Explore the Museum's collections across time and space</p> 
+      <div class ="loading-facts">
+        <p>Museums and their collections are created by people, who donate, collect and curate objects. Collections are affected by trends and events in museums, academia, politics, society and more.</p>
+      </div> 
+      <div class="loader">
+        <div class="loading-circle"></div>
+        <p>Loading</p><div class="loading-text">0%</div>
+        <!--<div class="loading-progress"></div>-->
+      </div>
+      <div class="loading-bottom">
+        <!--
+        <div class = "loading-image-wrapper">
+          <div class="loading-image">
+            <img src="/img/ico-arrowkeys.png" alt="AMNH logo" style="max-width:100%; max-height:100%">
+          </div>
+          <div class="loading-image">
+            <img src="/img/ico-arrowkeys.png" alt="Knight Foundation logo" style="max-width:100%; max-height:100%">
+          </div>
+        </div>
+      -->
+        <p>This project is a part of the Knight Foundation's Immersive Technology in the Arts Fund</p>
       </div>
     </div>
     <nav class="camera-nav">

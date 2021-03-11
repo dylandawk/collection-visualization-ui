@@ -133,13 +133,13 @@ var MainApp = (function() {
     var percentFinished = this.totalLoaded / this.totalToLoad;
     percentFinished = Math.round(percentFinished * 100) + '%';
     this.$loadingText.text(percentFinished);
-    this.$loadingProgress.css('width', percentFinished);
+    // this.$loadingProgress.css('width', percentFinished);
   };
 
   MainApp.prototype.onLoadStart = function(){
     this.totalLoaded = 0;
     this.totalToLoad = this.collection.getTotalToLoad();
-    this.$loadingProgress = $('.loading-progress');
+    //this.$loadingProgress = $('.loading-progress');
     this.$loadingText = $('.loading-text');
     this.$el.addClass('is-loading');
   };
