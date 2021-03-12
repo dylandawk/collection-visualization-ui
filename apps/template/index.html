@@ -23,20 +23,18 @@
         <div class="loading-text">0%</div>
       </div>
     </div>
-    <nav class="camera-nav">
-      <button class="move-button" data-direction="1" aria-label="Move camera forward">⇧</button>
-      <button class="move-button" data-direction="-1" aria-label="Move camera backward">⇩</button>
-    </nav>
 
     <div id="legend-container" class="legend-container"></div>
 
     <div id="stories-container" class="stories-container"></div>
 
     <div id="menus-container" class="menus-container active">
-      <button class="toggle-controls toggle-button active" data-on="Minimize" data-off="Maximize">Minimize</button>
+      <button class="toggle-menus toggle-button active" data-on="Minimize" data-off="Maximize">Minimize</button>
     </div>
 
     <div id="viewer" class="viewer"><div class="viewer-inner"></div></div>
+
+    <div id="touchpad" class="touchpad"><div class="touchpad-handle"></div></div>
 
     <div id="item-image-container" class="item-image-container"><img id="item-image" class="item-image" /></div>
     <div id="item-metadata-container" class="item-metadata-container">
@@ -69,6 +67,7 @@
   <script src="../../js/vendor/seedrandom.min.js"></script>
 
   <script src="../../js/utils/math_utils.js"></script>
+  <script src="../../js/utils/utils.js"></script>
 
   <script src="../../js/lib/collection.js"></script>
   <script src="../../js/lib/controls.js"></script>

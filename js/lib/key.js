@@ -36,7 +36,7 @@ var Key = (function() {
   };
 
   Key.prototype.loadLegend = function(){
-    var html = '<div class="legend key">';
+    var html = '<div class="legend key" data-type="'+this.opt.type+'" data-id="'+this.opt.id+'">';
       if (this.opt.title) html += '<h3>'+this.opt.title+'</h3>';
       html += '<ul class="legend-list">';
       _.each(this.opt.items, function(item){
@@ -49,7 +49,7 @@ var Key = (function() {
   };
 
   Key.prototype.loadMap = function(){
-    var html = '<div class="map key">';
+    var html = '<div class="map key" data-type="'+this.opt.type+'" data-id="'+this.opt.id+'">';
       if (this.opt.title) html += '<h3>'+this.opt.title+'</h3>';
       html += '<div class="map-wrapper">';
         html += '<img src="'+this.opt.imageDir+this.opt.image+'" alt="Map of the world with country outlines" />';
@@ -59,6 +59,7 @@ var Key = (function() {
     html += '</div>';
     this.$el = $(html);
     this.$marker = this.$el.find('.marker').first();
+    this.$hoverMarker = this.$el.find('.hover-marker').first();
     this.$parent.prepend(this.$el);
 
     // load listeners
@@ -94,7 +95,7 @@ var Key = (function() {
     var maxValue = _.max(this.opt.items, function(item){ return item.value; });
     var itemWidth = 1.0 / this.opt.items.length * 100;
     var dataHeight = 120;
-    var html = '<div class="timeline key">';
+    var html = '<div class="timeline key" data-type="'+this.opt.type+'" data-id="'+this.opt.id+'">';
       if (this.opt.title) html += '<h3>'+this.opt.title+'</h3>';
       html += '<div class="timeline-wrapper">';
         html += '<ul class="timeline-data">';
@@ -107,12 +108,14 @@ var Key = (function() {
         html += '<div class="domain year-start">'+this.opt.items[0].year+'</div>';
         html += '<div class="domain year-end">'+this.opt.items[this.opt.items.length-1].year+'</div>';
         html += '<div class="marker"><div class="marker-label"></div></div>';
-        html += '<div class="hover-marker"><div class="hover-marker-label"></div></div>';
+        html += '<div class="hover-marker"><div class="marker-label"></div></div>';
       html += '</div>';
     html += '</div>';
     this.$el = $(html);
     this.$marker = this.$el.find('.marker').first();
     this.$markerLabel = this.$marker.find('.marker-label').first();
+    this.$hoverMarker = this.$el.find('.hover-marker').first();
+    this.$hoverMarkerLabel = this.$hoverMarker.find('.marker-label').first();
     this.$parent.prepend(this.$el);
     this.dataHeight = this.$el.find('.timeline-data').first().height();
 
@@ -138,6 +141,29 @@ var Key = (function() {
       
     });
 
+  };
+
+  Key.prototype.onHover = function(nx, ny){
+    if (this.opt.type=='map') this.onHoverMap(nx, ny);
+    else if (this.opt.type=='timeline') this.onHoverTimeline(nx, ny);
+  };
+
+  Key.prototype.onHoverMap = function(nx, ny){
+    var percentLeft = (nx * 100) + '%';
+    var percentTop = (ny * 100) + '%';
+    this.$hoverMarker.css({
+      'left': percentLeft,
+      'top': percentTop
+    });
+  };
+
+  Key.prototype.onHoverTimeline = function(nx, ny){
+    var percentLeft = (nx * 100) + '%';
+    this.$hoverMarker.css('left', percentLeft);
+
+    var rangeLen = this.opt.items.length;
+    var year = Math.round(rangeLen * nx) + this.opt.items[0].year;
+    this.$hoverMarkerLabel.text(year);
   };
 
   Key.prototype.setBounds = function(bounds){
