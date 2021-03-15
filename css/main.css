@@ -66,27 +66,33 @@ button.inverse {
   font-size: 24;
   color:#01D0D2;
 }
-.loading-image{
-  display: flex;
-  width: 50%;
-  padding: 5px;
-}
-.loading-image-wrapper{
-  display: flex;
-}
-.loading-bottom{
+
+.intro-bottom{
   position: fixed;
   text-align: center;
   bottom: 0px;
   height: 100px;
   width: 1000px;
+  box-sizing: border-box;
   font-size: 15px;
 }
-.loading-bottom::after{
+
+.intro-bottom .image-container{
+  display:inline-block;
+  margin-left:auto;
+  margin-right:auto;
+  width: 33%;
+}
+.intro-bottom .image-row{
+  text-align: center;
+  overflow: auto;
+}
+.intro-bottom .image-row::after{
   content: "";
   clear: both;
   display: table;
 }
+
 .loading-bar {
   border: 2px solid var(--bg-lightest-color);
   width: 100%;
@@ -282,6 +288,7 @@ input[type="radio"]:checked ~ .checked-bg {
 .instructions li {
   padding: 1rem 0;
 }
+
 .instructions .image-container{
   float:left;
   width: 42%;
