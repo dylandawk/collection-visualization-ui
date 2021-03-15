@@ -53,8 +53,14 @@ var MainApp = (function() {
       _this.collection && _this.collection.triggerStory(true);
     });
 
-    $('.start').on('click', function(e){
+    $('.user-start').on('click', function(e){
       _this.onUserStart();
+    });
+    $('.explore-start').on('click', function(e){
+      _this.onExploreStart();
+    });
+    $('.tour-start').on('click', function(e){
+      _this.onTourStart();
     });
   };
 
@@ -112,7 +118,9 @@ var MainApp = (function() {
     this.scene.add(this.collection.getThree());
 
     this.loadListeners();
-    $('#instructions').addClass('active');
+    // Remove this
+    //$('#instructions').addClass('active');
+    $('.intro-buttons').addClass('active');
 
     var renderPromise = $.Deferred();
     setTimeout(function(){
@@ -123,7 +131,8 @@ var MainApp = (function() {
     // fade in
     $.when(renderPromise).done(function(){
       setTimeout(function(){
-        _this.collection.updateAlpha(0.0, 1.0, _this.opt.ui.startTransitionDuration);
+        // *add partial fade out here *
+        _this.collection.updateAlpha(0.0, .3, _this.opt.ui.startTransitionDuration);
       }, 100);
     });
   };
@@ -158,9 +167,23 @@ var MainApp = (function() {
       _this.controls.load();
       _this.collection.onFinishedStart();
       _this.$el.removeClass('is-loading');
-      _this.$el.removeClass('is-intro');
+      _this.collection.updateAlpha(0.3, 1, _this.opt.ui.startTransitionDuration);
     }, 100);
   };
+
+  // This will run after user hits "Explore Freely"
+  MainApp.prototype.onExploreStart = function() {
+    var _this = this;
+
+    //removes intro text and UI
+    _this.$el.removeClass('is-intro');
+
+    // add controls instructions
+    $('#instructions').addClass('active');
+  }
+  MainApp.prototype.onTourStart = function() {
+    
+  }
 
   MainApp.prototype.onResize = function(){
     var w = window.innerWidth;

@@ -75,7 +75,7 @@ button.inverse {
 .loading-facts p{
   font-weight: 400;
   font-size: 24;
-  color:#01D0D2;
+  color:#91EFF0;
 }
 
 .intro-footer{
@@ -102,6 +102,35 @@ button.inverse {
   content: "";
   clear: both;
   display: table;
+}
+
+.intro-buttons{
+  margin-top: 30px;
+  display: none;
+}
+
+.intro-buttons.active{
+  display: block;
+}
+
+.intro-buttons button{
+  font-weight: 200;
+  text-align: center;
+  margin-left : auto;
+  margin-right: auto;
+  margin-top: 15px;
+  width: 300px;
+  height: 50px;
+  border-style: solid;
+  border-color: white;
+  border-width: 1px;
+  background-color: transparent;
+  transition: 0.3s;
+  display: block;
+}
+
+.intro-buttons button:hover{
+  background-color: #004BB4;
 }
 
 .loading-bar {
@@ -289,7 +318,7 @@ input[type="radio"]:checked ~ .checked-bg {
   width: 100%;
   height: 100%;
   z-index: 10000;
-  background: rgba(0,0,0,0.3);
+  background:transparent;
 }
 .instructions h1 {
   font-size: 1.8rem;
