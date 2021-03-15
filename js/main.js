@@ -142,6 +142,7 @@ var MainApp = (function() {
     //this.$loadingProgress = $('.loading-progress');
     this.$loadingText = $('.loading-text');
     this.$el.addClass('is-loading');
+    this.$el.addClass('is-intro');
   };
 
   MainApp.prototype.onUserStart = function(){
@@ -157,6 +158,7 @@ var MainApp = (function() {
       _this.controls.load();
       _this.collection.onFinishedStart();
       _this.$el.removeClass('is-loading');
+      _this.$el.removeClass('is-intro');
     }, 100);
   };
 
