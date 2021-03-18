@@ -4,7 +4,8 @@ var MainApp = (function() {
 
   function MainApp(config) {
     var defaults = {
-      "el": "#app"
+      "el": "#app",
+      "canvasId": "mainCanvas"
     };
     var globalConfig = typeof CONFIG !== 'undefined' ? CONFIG : {};
     this.opt = _.extend({}, defaults, config, globalConfig);
@@ -102,6 +103,7 @@ var MainApp = (function() {
     var scene = new THREE.Scene();
     var camera = new THREE.PerspectiveCamera( 75, w / h, 1, 8000 );
     var renderer = new THREE.WebGLRenderer();
+    renderer.domElement.id = this.opt.canvasId;
     renderer.setSize(w, h);
     $el.append(renderer.domElement);
 
@@ -123,6 +125,7 @@ var MainApp = (function() {
 
     var newView = this.collection.getCurrentView(newViewKey);
     this.controls.setBounds(newView.bounds);
+    this.controls.setMode(newView.mode);
 
     // check if we're orbiting an item; fly with the item
     if (this.controls.isOrbiting) {
@@ -162,7 +165,7 @@ var MainApp = (function() {
     // this.camera.lookAt(new THREE.Vector3(0,0,0));
 
     var view = this.collection.getCurrentView();
-    this.controls = new Controls(_.extend({}, this.collection.ui, {'menus': this.opt.menus, 'camera': this.camera, 'renderer': this.renderer, 'el': this.opt.el, 'bounds': view.bounds, 'storyManager': this.collection.storyManager, 'itemManager': this.collection.itemManager, 'zoomInTransitionDuration': this.opt.ui.zoomInTransitionDuration, 'years' : this.opt.years}));
+    this.controls = new Controls(_.extend({}, this.collection.ui, {'menus': this.opt.menus, 'camera': this.camera, 'renderer': this.renderer, 'el': this.opt.el, 'bounds': view.bounds, 'storyManager': this.collection.storyManager, 'itemManager': this.collection.itemManager, 'zoomInTransitionDuration': this.opt.ui.zoomInTransitionDuration, 'canvasEl': '#'+this.opt.canvasId}));
     this.collection.setControls(this.controls);
 
     this.scene.add(this.collection.getThree());

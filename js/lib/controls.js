@@ -5,11 +5,12 @@ var Controls = (function() {
   function Controls(config) {
     var defaults = {
       "el": "#app",
+      "canvasEl": "#mainCanvas",
       "mode": "firstPerson", // mode: firstPerson or railcar
       "maxVelocity": 20,
       "acceleration": 0.2,
       "bounds": [-256, 256, -32768, 32768],
-      "lookSpeed": 0.05,
+      "lookSpeed": 0.01,
       "zoomInTransitionDuration": 2000,
       "orbitLookSpeed": 0.1,
       "latRange": [-85, 85],  // range of field of view in y-axis
@@ -30,6 +31,7 @@ var Controls = (function() {
 
   Controls.prototype.init = function(){
     this.$el = $(this.opt.el);
+    this.$canvas = $(this.opt.canvasEl)
     this.isTouch = isTouchDevice();
     this.isXR = false;
     this.moveDirectionX = 0;
@@ -44,11 +46,21 @@ var Controls = (function() {
     this.orbit = new THREE.Spherical();
     this.orbitPointerOrigin = new THREE.Vector2();
     this.cameraIsLocked = false;
+    this.isUsingTrackpad = false;
+
+    this.autoAttach = true;
+    this.isAttached = true;
+    this.attachTimeout = false;
+
+    this.lookSpeedNormal = this.opt.lookSpeed;
+    this.lookSpeedFast = this.opt.lookSpeed * 5;
+    this.lookSpeed = this.lookSpeedNormal;
 
     // for determining what the camera is looking at
     this.pointed = false;
     this.pointer = new THREE.Vector2();
     this.npointer = new THREE.Vector2();
+    this.npointerLook = new THREE.Vector2(); // a vector that is delayed, follows npointer
     // this.pointerDelta = new THREE.Vector2();
     this.lat = 0;
     this.lon = 0;
@@ -60,9 +72,28 @@ var Controls = (function() {
     this.targetPositionX = 0;
   };
 
+  Controls.prototype.attachCursor = function(isAttached, centerPointer) {
+    this.isAttached = isAttached;
+    this.attachTimeout = false;
+
+    if (centerPointer) {
+      this.centerPointer();
+    }
+
+    if (isAttached) this.lookSpeed = this.lookSpeedNormal;
+    else this.lookSpeed = this.lookSpeedFast;
+  };
+
+  Controls.prototype.attachCursorWithDelay = function(ms){
+    if (this.attachTimeout) return;
+
+    var _this = this;
+    this.attachTimeout = setTimeout(function(){ _this.attachCursor(true); }, ms);
+  };
+
   Controls.prototype.centerPointer = function(){
-    var x = this.$el.width() * 0.5;
-    var y = this.$el.height() * 0.5;
+    var x = this.viewW * 0.5;
+    var y = this.viewH * 0.5;
 
     this.onPointChange(x, y);
   };
@@ -136,6 +167,7 @@ var Controls = (function() {
 
   Controls.prototype.load = function(){
     this.loadListeners();
+    this.loadTouchpad();
     this.loaded = true;
     this.update();
   };
@@ -161,24 +193,35 @@ var Controls = (function() {
 
     $doc.keydown(function(e) {
       switch(e.key) {
-        // case 'ArrowUp': // arrow up
+        case 'ArrowUp': // arrow up
         case 'w': // w
+          e.preventDefault();
           _this.moveDirectionY = 1;
           break;
 
-        // case 'ArrowDown': // arrow down
+        case 'ArrowDown': // arrow down
         case 's': // s
+          e.preventDefault();
           _this.moveDirectionY = -1;
           break;
 
-        // case 'ArrowLeft': // arrow left
+        case 'ArrowLeft': // arrow left
         case 'a': // a
+          e.preventDefault();
           _this.moveDirectionX = 1;
           break;
 
-        // case 'ArrowRight': // arrow right
+        case 'ArrowRight': // arrow right
         case 'd': // d
+          e.preventDefault();
           _this.moveDirectionX = -1;
+          break;
+
+        // detach cursor when click escape
+        case 'Escape':
+          e.preventDefault();
+          _this.autoAttach = false;
+          _this.attachCursor(false);
           break;
 
         default:
@@ -187,18 +230,20 @@ var Controls = (function() {
     });
 
     $doc.keyup(function(e) {
-      switch(e.which) {
-        // case 38: // arrow up
-        case 87: // w
-        // case 40: // arrow down
-        case 83: // s
+      switch(e.key) {
+        case 'ArrowUp': // arrow up
+        case 'w': // w
+        case 'ArrowDown': // arrow down
+        case 's': // s
+          e.preventDefault();
           _this.moveDirectionY = 0;
           break;
 
-        // case 37: // arrow left
-        case 65: // a
-        // case 39: // arrow right
-        case 68: // d
+        case 'ArrowLeft': // arrow left
+        case 'a': // a
+        case 'ArrowRight': // arrow right
+        case 'd': // d
+          e.preventDefault();
           _this.moveDirectionX = 0;
           break;
 
@@ -207,38 +252,28 @@ var Controls = (function() {
       }
     });
 
-    // $doc.on('mousedown', 'canvas', function(e) {
-    //   if (isTouch) return;
-    //   switch (e.which) {
-    //     // left mouse
-    //     case 1:
-    //       _this.moveDirectionY = 1;
-    //       break;
-    //     // right mouse
-    //     case 3:
-    //       e.preventDefault();
-    //       _this.moveDirectionY = -1;
-    //       break;
-    //     default:
-    //       break;
-    //   }
-    // });
-    // $doc.on('mouseup', 'canvas', function(e) {
-    //   if (isTouch) return;
-    //   _this.moveDirectionY = 0;
-    // });
-
-    $doc.on('contextmenu', 'canvas', function(e) {
+    this.$canvas.on('contextmenu', function(e) {
       e.preventDefault();
     });
 
     $doc.on("mousemove", function(e){
-      if (isTouch) return;
-      _this.onPointChange(e.pageX, e.pageY);
+      if (isTouch || _this.isUsingTrackpad) return;
+      if (_this.autoAttach && !_this.isOrbiting) {
+        if (e.target.id !== 'mainCanvas') _this.attachCursor(false, true);
+        else _this.attachCursorWithDelay(500);
+      }
+      if (_this.isAttached) {
+        _this.onPointChange(e.pageX, e.pageY);
+      }
     });
 
-    $doc.on('click', 'canvas', function(e) {
+    this.$canvas.on('click', function(e) {
+      if (!_this.autoAttach && !_this.isAttached) {
+        _this.autoAttach = true;
+        _this.attachCursor(true);
+      }
       _this.onPointChange(e.pageX, e.pageY);
+
       $(document).trigger('canvas-click', [_this.pointer, _this.npointer]);
     });
 
@@ -269,26 +304,50 @@ var Controls = (function() {
     })
 
     if (isTouch) {
-      var el = this.$el[0];
+      var el = this.$canvas[0];
       var mc = new Hammer(el);
       mc.get('pan').set({ direction: Hammer.DIRECTION_ALL });
       mc.on("panstart panmove press", function(e) {
         _this.onPointChange(e.center.x, e.center.y);
       });
-      mc.on("panend pancancel pressup", function(e){
-        _this.centerPointer();
-      });
+      // mc.on("panend pancancel pressup", function(e){
+      //   _this.centerPointer();
+      // });
     }
   };
 
+  Controls.prototype.loadTouchpad = function(){
+    var _this = this;
+    var $touchpad = $('#touchpad');
+    if (!$touchpad.length) return;
+
+    this.$touchpad = $touchpad;
+    this.$touchpadHandle = $touchpad.find('.touchpad-handle').first();
+
+    var touchpadEl = $touchpad[0];
+    var touchPad = new Hammer(touchpadEl);
+    touchPad.get('pan').set({ direction: Hammer.DIRECTION_ALL });
+    touchPad.on("panstart panmove press", function(e) {
+      var p = Util.getRelativePoint($touchpad, e.center.x, e.center.y);
+      _this.onTouchpadChange(p.x, p.y);
+    });
+    touchPad.on("panend", function(e) {
+      _this.onTouchpadEnd();
+    });
+  };
+
   Controls.prototype.normalizePointer = function(){
-    this.npointer.x = ( this.pointer.x / window.innerWidth ) * 2 - 1;
-    this.npointer.y = -( this.pointer.y / window.innerHeight ) * 2 + 1;
+    var nx = this.pointer.x / this.viewW;
+    var ny = this.pointer.y / this.viewH;
+    this.npointer.x = nx * 2 - 1;
+    this.npointer.y = -ny * 2 + 1;
   };
 
   Controls.prototype.onResize = function(){
-    this.viewHalfX = window.innerWidth / 2;
-    this.viewHalfY = window.innerHeight / 2;
+    this.viewW = window.innerWidth;
+    this.viewH = window.innerHeight;
+    this.viewHalfX = this.viewW / 2;
+    this.viewHalfY = this.viewH / 2;
   };
 
   Controls.prototype.onPointChange = function(x, y){
@@ -298,6 +357,57 @@ var Controls = (function() {
     this.pointer.x = x;
     this.pointer.y = y;
     this.normalizePointer();
+  };
+
+  Controls.prototype.onTouchpadChange = function(nx, ny){
+    // console.log(nx, ny);
+    this.$touchpad.addClass('active');
+
+    // compare touch coordinates to circle center
+    var distanceX = nx - 0.5;
+    var distanceY = ny - 0.5;
+
+    //determine distance from center and use as velocity magnitude
+    var r = 0.4;
+    var mag = Math.sqrt((distanceX * distanceX) + (distanceY * distanceY)); // distance formula
+    var nMag = (mag > r) ? 1 : mag / r; // normalized magnitude with max magnitude = 1;
+
+    // determine final direction so velocity is such that -1 >= velocity >= 1
+    var direction = new THREE.Vector2();
+    direction.x = (mag === 0) ? 0 : (Math.cos(Math.acos(distanceX / mag))) * nMag;
+    direction.y = (mag === 0) ? 0 : (Math.sin(Math.asin(distanceY / mag))) * nMag;
+
+    // console.log(`direction X: ${direction.x} direction Y: ${direction.y}`);
+
+    // create a small circle to visualize direction
+    var handleX = 0.5 + (r * direction.x);
+    var handleY = 0.5 + (r * direction.y);
+    this.$touchpadHandle.css({
+      left: (handleX*100) + '%',
+      top: (handleY*100) + '%'
+    });
+
+    var threshold = 0.1;
+    var nx = MathUtil.lerp(1, -1, handleX);
+    var ny = MathUtil.lerp(1, -1, handleY);
+
+    if (Math.abs(nx) < threshold) nx = 0;
+    if (Math.abs(ny) < threshold) ny = 0;
+
+    this.moveDirectionX = nx;
+    this.moveDirectionY = ny;
+    this.isUsingTrackpad = true;
+  };
+
+  Controls.prototype.onTouchpadEnd = function(){
+    this.$touchpad.removeClass('active');
+    this.$touchpadHandle.css({
+      left: '50%',
+      top: '50%'
+    });
+    this.moveDirectionX = 0;
+    this.moveDirectionY = 0;
+    this.isUsingTrackpad = false;
   };
 
   Controls.prototype.releaseAnchor = function(flyToLastPosition){
@@ -325,6 +435,10 @@ var Controls = (function() {
     this.opt.bounds = bounds;
   };
 
+  Controls.prototype.setMode = function(mode){
+    this.mode = mode;
+  };
+
   Controls.prototype.update = function(now, delta){
     if (!this.loaded) return;
 
@@ -342,21 +456,18 @@ var Controls = (function() {
 
     // move camera direction based on pointer
     if (this.pointed !== false && delta > 0 && !this.cameraIsLocked) {
-      var x = this.pointer.x - this.viewHalfX;
-      var y = this.pointer.y - this.viewHalfY;
+      this.updateLookPointer();
       var prevLat = this.lat;
       var prevLon = this.lon;
-      var actualLookSpeed = delta * this.opt.lookSpeed;
-      var maxDelta = 1;
-      var deltaX = MathUtil.clamp(x * actualLookSpeed, -maxDelta, maxDelta);
-      var deltaY = MathUtil.clamp(y * actualLookSpeed, -maxDelta, maxDelta);
-      // if (Math.abs(deltaX) > maxDelta || Math.abs(deltaY) > maxDelta) console.log(deltaX, deltaY);
-      this.lon -= deltaX;
-      this.lat -= deltaY;
-      this.lat = MathUtil.clamp(this.lat, this.opt.latRange[0], this.opt.latRange[1]);
-      this.lon = MathUtil.clamp(this.lon, this.opt.lonRange[0], this.opt.lonRange[1]);
 
-      if (prevLat === this.lat && prevLon === this.lon) return;
+      var nx = MathUtil.norm(this.npointerLook.x, -1, 1);
+      var ny = MathUtil.norm(this.npointerLook.y, -1, 1);
+      this.lat = MathUtil.lerp(this.opt.latRange[0], this.opt.latRange[1], ny);
+      this.lon = MathUtil.lerp(this.opt.lonRange[1], this.opt.lonRange[0], nx);
+
+      // if (prevLat === this.lat && prevLon === this.lon && this.isAttached) return;
+
+      //console.log(this.lat, this.lon, this.npointer.x, this.npointer.y);
 
       var phi = MathUtil.degToRad(90 - this.lat);
       var theta = MathUtil.degToRad(this.lon);
@@ -379,6 +490,7 @@ var Controls = (function() {
   Controls.prototype.updateAxis = function(axis){
     var moveDirection = this['moveDirection'+axis];
     var mode = this.mode;
+    var bounds = this.opt.bounds;
     var acceleration = false;
     var fixedY = this.camera.position.y;
 
@@ -417,18 +529,26 @@ var Controls = (function() {
     if (this['velocity'+axis] > 0 || this['velocity'+axis] < 0) {
       if (axis == 'Y') {
         var newZ = this.camera.position.z + this['velocity'+axis];
-        newZ = MathUtil.clamp(newZ, this.opt.bounds[2], this.opt.bounds[3]);
+        newZ = MathUtil.clamp(newZ, bounds[2], bounds[3]);
         var deltaZ = newZ - this.camera.position.z;
         if (mode==="firstPerson") this.camera.translateZ(-deltaZ);
         else this.camera.position.setZ(newZ);
         // console.log(newZ)
       } else {
         var newX = this.camera.position.x + this['velocity'+axis];
-        newX = MathUtil.clamp(newX, this.opt.bounds[0], this.opt.bounds[1]);
+        newX = MathUtil.clamp(newX, bounds[0], bounds[1]);
         var deltaX = newX - this.camera.position.x;
         if (mode==="firstPerson") this.camera.translateX(-deltaX);
         else this.camera.position.setX(newX);
         // console.log(newX)
+      }
+
+      // enforce bounds for firstPerson since it moves the camera relative to self
+      if (mode==="firstPerson") {
+        if (this.camera.position.x < bounds[0]) this.camera.position.setX(bounds[0]);
+        else if (this.camera.position.x > bounds[1]) this.camera.position.setX(bounds[1]);
+        if (this.camera.position.z < bounds[2]) this.camera.position.setZ(bounds[2]);
+        else if (this.camera.position.z > bounds[3]) this.camera.position.setZ(bounds[3]);
       }
 
       // constrain Y
@@ -436,6 +556,19 @@ var Controls = (function() {
 
       renderNeeded = true;
     }
+  };
+
+  Controls.prototype.updateLookPointer = function(){
+    var distance = this.npointerLook.distanceTo(this.npointer);
+    if (distance <= 0) return;
+
+    if (distance < 0.00001) {
+      this.npointerLook.copy(this.npointer);
+      return;
+    }
+
+    // have the look vector trail a little behind the cursor
+    this.npointerLook.lerp(this.npointer, this.lookSpeed);
   };
 
   Controls.prototype.updateOrbit = function(now, delta){
