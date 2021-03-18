@@ -37,6 +37,7 @@ var Collection = (function() {
   };
 
   Collection.prototype.deselectActiveItem = function(){
+    if (this.itemManager.itemIndex < 0 || this.itemManager.itemIndex===false) return;
     var flyToLastPosition = true;
     this.controls && this.controls.releaseAnchor(flyToLastPosition);
     var itemIndex = this.itemManager.releaseSelectedItem();
@@ -61,6 +62,13 @@ var Collection = (function() {
       toAlphaValues[index] = 1.0;
     })
     this.updateAlpha(false, toAlphaValues, transitionDuration);
+  };
+
+  Collection.prototype.getCurrentItemIndex = function(){
+    var index = -1;
+    if (this.itemManager) index = this.itemManager.itemIndex;
+    if (index === false || index === undefined) index = -1;
+    return index;
   };
 
   Collection.prototype.getCurrentView = function(key){
@@ -214,11 +222,6 @@ var Collection = (function() {
   Collection.prototype.loadListeners = function(){
     var _this = this;
     var $doc = $(document);
-
-    $doc.on('change-view', function(e, newValue, duration) {
-      console.log("Changing view to "+newValue);
-      _this.updateView(newValue, duration);
-    });
 
     $doc.keypress(function(e){
       if (e.key === 'x') {
@@ -427,10 +430,22 @@ var Collection = (function() {
     // trigger a story to open
     var openedStoryKey = this.triggerStory();
 
+    // triggered story; end here
+    if (openedStoryKey !== false) return;
+
     // trigger an item if user did not click on story
-    if (openedStoryKey===false) {
-      this.triggerItem();
+    var previousItemIndex = this.itemManager.itemIndex;
+    var triggeredItemIndex = this.triggerItem();
+
+    // triggered item; end here
+    if (triggeredItemIndex !== false) {
+      // show previous item
+      this.updateItemAlpha(previousItemIndex, 1, 10);
+      return;
     }
+
+    // deselect active item
+    this.deselectActiveItem();
   };
 
   Collection.prototype.onFinishedStart = function(){
@@ -519,7 +534,7 @@ var Collection = (function() {
     var _this = this;
     var triggeredItemIndex = this.itemManager.triggerSelectedItem();
 
-    if (triggeredItemIndex===false) return;
+    if (triggeredItemIndex===false) return false;
 
     var position = this.itemManager.itemPositions[triggeredItemIndex];
     var anchorToPosition = true;
@@ -529,6 +544,8 @@ var Collection = (function() {
         _this.updateItemAlpha(triggeredItemIndex, 0); // hide the current item
       });
     });
+
+    return triggeredItemIndex;
   };
 
   Collection.prototype.triggerStory = function(forceClose){
@@ -603,6 +620,7 @@ var Collection = (function() {
   };
 
   Collection.prototype.updateItemAlpha = function(itemIndex, alpha, transitionDuration){
+    if (itemIndex === false || itemIndex < 0) return;
     transitionDuration = transitionDuration===undefined ? this.opt.ui.transitionDuration : transitionDuration;
     var toAlphaValues = this.pointCloud.alphaArr;
     toAlphaValues[itemIndex] = alpha;
