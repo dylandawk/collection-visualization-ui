@@ -7,6 +7,7 @@ var Collection = (function() {
       'onLoadEnd': function(){ console.log('Loading finished'); },
       'onLoadProgress': function(){ console.log('Loading progress...') },
       'zoomInDistance': 30, // how far away camera should be when it zooms into an item
+      "menuContainer": "#menus-container",
       'seedString': 'museum' // seed for randomizing positions
     };
     this.opt = _.extend({}, defaults, config);
@@ -18,6 +19,7 @@ var Collection = (function() {
     this.listener = this.opt.listener;
     this.controls = false;
     this.currentViewKey = 'randomSphere';
+    this.isViewTransitioning = false;
     this.minAlpha = this.opt.ui.minAlpha;
 
     this.ui = this.opt.ui;
@@ -118,6 +120,7 @@ var Collection = (function() {
     var _this = this;
 
     this.loadKeys();
+    this.loadMenus();
 
     $.when(
       this.loadLabels(),
@@ -138,7 +141,7 @@ var Collection = (function() {
     var _this = this;
     var keys = {};
     _.each(this.opt.keys, function(keyOptions, keyValue){
-      var key = new Key(_.extend({}, keyOptions, {camera: _this.camera}));
+      var key = new Key(_.extend({id: keyValue}, keyOptions, {camera: _this.camera}));
       keys[keyValue] = key;
     });
 
@@ -219,21 +222,12 @@ var Collection = (function() {
     return deferred;
   };
 
-  Collection.prototype.loadListeners = function(){
+  Collection.prototype.loadMenus = function(){
     var _this = this;
-    var $doc = $(document);
 
-    $doc.keypress(function(e){
-      if (e.key === 'x') {
-        e.preventDefault()
-        _this.deselectActiveItem();
-      }
-    });
-
-    $('.item-metadata-close').on('click', function(e){
-      e.preventDefault()
-      _this.deselectActiveItem();
-    });
+    if (_.has(this.opt.menus, 'viewOptions')) {
+      _this.loadViewMenu(this.opt.menus.viewOptions);
+    }
   };
 
   Collection.prototype.loadMetadata = function(){
@@ -422,6 +416,36 @@ var Collection = (function() {
     return deferred;
   };
 
+  Collection.prototype.loadViewMenu = function(options){
+    var html = '';
+    var currentViewIndex = 0;
+    var currentViewKey = this.currentViewKey;
+    html += '<div id="'+options.id+'" class="'+options.className+' menu">';
+      if (options.label) {
+        html += '<h2>'+options.label+':</h2>';
+      }
+      html += '<form class="radio-button-form">';
+      _.each(options.radioItems, function(item, i){
+        var type = options.parseType || 'string';
+        var id = item.name + (i+1);
+        var checked = item.checked ? 'checked' : '';
+        var isPrimary = options.default ? '1' : '0';
+        if (item.checked) {
+          currentViewIndex = i;
+          currentViewKey = item.value;
+        }
+        html += '<label for="'+id+'"><input id="'+id+'" class="view-option" type="radio" name="'+item.name+'" value="'+item.value+'" data-type="'+type+'" data-index="'+i+'" data-primary="'+isPrimary+'" '+checked+' /><div class="checked-bg"></div> <span>'+item.label+'</span></label>';
+      });
+      html += '</form>';
+    html += '</div>';
+    var $menu = $(html);
+
+    this.currentViewIndex = currentViewIndex;
+    this.currentViewKey = currentViewKey;
+    this.$viewOptions = $menu.find('.view-option');
+    $(this.opt.menuContainer).append($menu);
+  };
+
   Collection.prototype.onClickCanvas = function(pointer, npointer){
     var now = new Date().getTime();
     this.storyManager.update(now, npointer, this.camera);
@@ -448,10 +472,49 @@ var Collection = (function() {
     this.deselectActiveItem();
   };
 
+  Collection.prototype.onClickKey = function($key, e){
+    if (this.controls && this.controls.isFlying) return;
+    var id = $key.attr('data-id');
+    if (!_.has(this.keys, id)) return;
+
+    var key = this.keys[id];
+    var type = key.opt.type;
+    var bounds = key.bounds;
+
+    if ((type != "map" && type != "timeline") || !bounds) return;
+
+    var p = Util.getRelativePoint($key, e.pageX, e.pageY);
+
+    var originPosition = this.camera.position.clone();
+    var targetPosition = originPosition.clone();
+
+    if (type == "timeline") {
+      targetPosition.z = MathUtil.lerp(bounds[2], bounds[3], p.x);
+    } else if (type == "map") {
+      targetPosition.x = MathUtil.lerp(bounds[1], bounds[0], p.x);
+      targetPosition.z = MathUtil.lerp(bounds[3], bounds[2], p.y);
+    }
+
+    var distance = originPosition.distanceTo(targetPosition);
+    var unitsPerSecond = 1000;
+    var duration = parseInt(distance / unitsPerSecond * 1000);
+
+    var targetLookAtPosition = false;
+    this.controls.flyTo(targetPosition, targetLookAtPosition, duration);
+  };
+
   Collection.prototype.onFinishedStart = function(){
     _.each(this.soundSets, function(soundSet, key){
       soundSet.active = true;
     });
+  };
+
+  Collection.prototype.onHoverOverKey = function($key, e){
+    var id = $key.attr('data-id');
+    if (!_.has(this.keys, id)) return;
+
+    var p = Util.getRelativePoint($key, e.pageX, e.pageY);
+    this.keys[id].onHover(p.x, p.y);
   };
 
   Collection.prototype.onReady = function(){
@@ -517,8 +580,18 @@ var Collection = (function() {
     container.add(hotspotGroup);
 
     this.container = container;
+  };
 
-    this.loadListeners();
+  Collection.prototype.onViewOptionChange = function($input){
+    if (this.isViewTransitioning) return false;
+    var name = $input.attr('name');
+    var value = $input.val();
+    var index = parseInt($input.attr('data-index'));
+    if (this.currentViewIndex===index) return false;
+
+    this.currentViewIndex = index;
+    $(document).trigger('change-view', value);
+    return true;
   };
 
   Collection.prototype.resetFilters = function(transitionDuration){
@@ -528,6 +601,31 @@ var Collection = (function() {
 
   Collection.prototype.setControls = function(controls){
     this.controls = controls;
+  };
+
+  Collection.prototype.stepViewOption = function(step){
+    if (!this.$viewOptions || !this.$viewOptions.length || this.isViewTransitioning) return;
+
+    var currentViewIndex = this.currentViewIndex + step;
+    if (currentViewIndex < 0) currentViewIndex = this.$viewOptions.length-1;
+    else if (currentViewIndex >= this.$viewOptions.length) currentViewIndex = 0;
+
+    this.$viewOptions.eq(currentViewIndex).prop('checked', true);
+    this.$viewOptions.eq(currentViewIndex).focus();
+    this.onViewOptionChange(this.$viewOptions.eq(currentViewIndex));
+  };
+
+  Collection.prototype.toggleMenus = function($button){
+    $button.toggleClass('active');
+    var isActive = $button.hasClass('active');
+
+    var newText = isActive ? $button.attr('data-on') : $button.attr('data-off');
+    var $parent = $button.parent();
+
+    $button.text(newText);
+
+    if (isActive) $parent.addClass('active');
+    else $parent.removeClass('active');
   };
 
   Collection.prototype.triggerItem = function(){
@@ -606,6 +704,10 @@ var Collection = (function() {
 
     this.storyManager.update(now, pointerPosition, this.camera);
     this.itemManager.update(now, pointerPosition);
+
+    if (this.isViewTransitioning && now >= this.transitionViewEnd) {
+      this.isViewTransitioning = false;
+    }
   };
 
   Collection.prototype.updateAlpha = function(fromAlpha, toAlpha, transitionDuration){
@@ -651,6 +753,10 @@ var Collection = (function() {
   Collection.prototype.updateView = function(newValue, transitionDuration){
     if (newValue === this.currentViewKey) return;
     transitionDuration = transitionDuration || this.opt.ui.transitionDuration;
+
+    var now = new Date().getTime();
+    this.isViewTransitioning = true;
+    this.transitionViewEnd = now + transitionDuration;
 
     if (this.changeViewComponentsTimeout) clearTimeout(this.changeViewComponentsTimeout);
 

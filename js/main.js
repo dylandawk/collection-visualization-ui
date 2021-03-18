@@ -4,7 +4,8 @@ var MainApp = (function() {
 
   function MainApp(config) {
     var defaults = {
-      "el": "#app"
+      "el": "#app",
+      "canvasId": "mainCanvas"
     };
     var globalConfig = typeof CONFIG !== 'undefined' ? CONFIG : {};
     this.opt = _.extend({}, defaults, config, globalConfig);
@@ -60,8 +61,49 @@ var MainApp = (function() {
     $('.explore-start').on('click', function(e){
       _this.onExploreStart();
     });
+    
     $('.tour-start').on('click', function(e){
       _this.onTourStart();
+    });
+
+    $doc.on('mousemove', '.key', function(e) {
+      _this.collection && _this.collection.onHoverOverKey($(this), e);
+    });
+
+    $doc.on('click', '.key', function(e) {
+      _this.collection && _this.collection.onClickKey($(this), e);
+    });
+
+    $('.start').on('click', function(e){
+      _this.onUserStart();
+    });
+
+    $doc.keypress(function(e){
+      if (e.key === 'x') {
+        e.preventDefault()
+        _this.collection.deselectActiveItem();
+      }
+    });
+
+    $doc.on('click', '.view-option', function(e) {
+      var result = _this.collection.onViewOptionChange($(this));
+      if (!result) e.preventDefault();
+    });
+
+    $doc.keypress(function(e){
+      if (e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault()
+        _this.collection.stepViewOption(1);
+      }
+    });
+
+    $('.item-metadata-close').on('click', function(e){
+      e.preventDefault()
+      _this.collection.deselectActiveItem();
+    });
+
+    $('.toggle-menus').on('click', function(){
+      _this.collection.toggleMenus($(this));
     });
   };
 
@@ -72,6 +114,7 @@ var MainApp = (function() {
     var scene = new THREE.Scene();
     var camera = new THREE.PerspectiveCamera( 75, w / h, 1, 8000 );
     var renderer = new THREE.WebGLRenderer();
+    renderer.domElement.id = this.opt.canvasId;
     renderer.setSize(w, h);
     $el.append(renderer.domElement);
 
@@ -93,6 +136,7 @@ var MainApp = (function() {
 
     var newView = this.collection.getCurrentView(newViewKey);
     this.controls.setBounds(newView.bounds);
+    this.controls.setMode(newView.mode);
 
     // check if we're orbiting an item; fly with the item
     if (this.controls.isOrbiting) {
@@ -132,7 +176,7 @@ var MainApp = (function() {
     // this.camera.lookAt(new THREE.Vector3(0,0,0));
 
     var view = this.collection.getCurrentView();
-    this.controls = new Controls(_.extend({}, this.collection.ui, {'menus': this.opt.menus, 'camera': this.camera, 'renderer': this.renderer, 'el': this.opt.el, 'bounds': view.bounds, 'storyManager': this.collection.storyManager, 'itemManager': this.collection.itemManager, 'zoomInTransitionDuration': this.opt.ui.zoomInTransitionDuration, 'years' : this.opt.keys.years}));
+    this.controls = new Controls(_.extend({}, this.collection.ui, {'menus': this.opt.menus, 'camera': this.camera, 'renderer': this.renderer, 'el': this.opt.el, 'bounds': view.bounds, 'storyManager': this.collection.storyManager, 'itemManager': this.collection.itemManager, 'zoomInTransitionDuration': this.opt.ui.zoomInTransitionDuration, 'canvasEl': '#'+this.opt.canvasId}));
     this.collection.setControls(this.controls);
 
     this.scene.add(this.collection.getThree());
@@ -172,6 +216,18 @@ var MainApp = (function() {
     this.$loadingText = $('.loading-text');
     this.$el.addClass('is-loading');
     this.$el.addClass('is-intro');
+  };
+
+  MainApp.prototype.onResize = function(){
+    var w = window.innerWidth;
+    var h = window.innerHeight;
+    this.camera.aspect = w / h;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(w, h);
+
+    this.controls && this.controls.onResize();
+
+    renderNeeded = true;
   };
 
   MainApp.prototype.onUserStart = function(){
