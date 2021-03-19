@@ -66,6 +66,30 @@ var MainApp = (function() {
       _this.onTourStart();
     });
 
+    $('.menu-option').on('click', function(e){
+      $(this).toggleClass("button-down");
+      console.log("menu-option clicked");
+    });
+    $('.info-option').on('click', function(e){
+      $(this).toggleClass("button-down");
+      console.log("info-option clicked");
+    });
+    
+    $('.sound-option').on('click', function(e){
+      $(this).toggleClass("button-down");
+      console.log("sound-option clicked");
+    });
+
+    $('.fullscreen-option').on('click', function(e){
+      $(this).toggleClass("button-down");
+      console.log("fullscreen-option clicked");
+    });
+    $('.star-option').on('click', function(e){
+      $(this).toggleClass("button-down");
+      console.log("star-option clicked");
+    });
+    
+
     $doc.on('mousemove', '.key', function(e) {
       _this.collection && _this.collection.onHoverOverKey($(this), e);
     });
