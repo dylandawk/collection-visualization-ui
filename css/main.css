@@ -434,6 +434,48 @@ input[type="radio"]:checked ~ .checked-bg {
   display: block;
 }
 
+.menu-icons {
+  display:block
+}
+.menu-icons label{
+  display: inline-block;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background-color: transparent;
+  outline: none;
+}
+
+.menu-icon{
+  border-radius: 50%;
+  background-color:rgb(255,255,255, 0.8);
+  transition: .4s;
+}
+.menu-icons p {
+  font-weight: 200;
+  font-size: 14px;
+}
+.menu-icons [type=radio]{
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.menu-icons [type=radio] + svg{
+  cursor: pointer;
+}
+.menu-icons [type=radio]:checked + .menu-icon{
+  background-color: #004BB4;
+}
+
+.menu-icons [type=radio]:checked + .menu-icon .menu-icon-path{
+  fill: white;
+}
+
+.menu-icon-path{
+  fill: black;
+}
+
 .key .marker,
 .key .hover-marker {
   position: absolute;
