@@ -79,6 +79,16 @@ var MainApp = (function() {
       _this.$intro.addClass('active');
     });
 
+    $('.show-fullscreen').on('click', function(){
+      $(this).toggleClass('active');
+      _this.onToggleFullscreen();
+    });
+
+    $('.show-sound').on('click', function(){
+      $(this).toggleClass('active');
+    });
+
+
     $doc.keypress(function(e){
       if (e.key === 'x') {
         e.preventDefault()
@@ -256,6 +266,31 @@ var MainApp = (function() {
       _this.$el.removeClass('is-loading');
     }, 100);
   };
+
+  MainApp.prototype.onToggleFullscreen = function() {
+    if (!document.fullscreenElement &&    // alternative standard method
+      !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement ) {  // current working methods
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen();
+    } else if (document.documentElement.msRequestFullscreen) { // IE11
+      document.documentElement.msRequestFullscreen();
+    } else if (document.documentElement.mozRequestFullScreen) { // Firefox
+      document.documentElement.mozRequestFullScreen();
+    } else if (document.documentElement.webkitRequestFullscreen) { // Safari
+      document.documentElement.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+    }
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.msExitFullscreen) { // IE11
+      document.msExitFullscreen();
+    } else if (document.mozCancelFullScreen) { // Firefox
+      document.mozCancelFullScreen();
+    } else if (document.webkitExitFullscreen) { // Safari
+      document.webkitExitFullscreen();
+    }
+  }
+  }
 
   MainApp.prototype.render = function(){
     var _this = this;

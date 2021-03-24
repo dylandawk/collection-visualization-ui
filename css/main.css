@@ -370,6 +370,21 @@ button.inverse:hover {
 .main-nav button svg .filled {
   fill: var(--text-color);
 }
+
+.main-nav .show-fullscreen .maximize,
+.main-nav .show-sound .sound-off{
+  display: none;
+}
+
+.main-nav .show-fullscreen.active .maximize,
+.main-nav .show-sound.active .sound-off{
+  display: block;
+}
+.main-nav .show-fullscreen.active .minimize,
+.main-nav .show-sound.active .sound-on{
+  display: none;
+}
+
 .app.is-loading .main-nav {
   display: none;
 }
