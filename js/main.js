@@ -91,6 +91,7 @@ var MainApp = (function() {
 
     $('.show-sound').on('click', function(){
       $(this).toggleClass('active');
+      _this.onToggleSound();
     });
 
     $('.show-stories').on('click', function(){
@@ -255,7 +256,6 @@ var MainApp = (function() {
   };
 
   MainApp.prototype.onStoryStart = function(val){
-    console.log(`You selected story #${val}`);
     this.onUserStart();
   }
 
@@ -294,17 +294,22 @@ var MainApp = (function() {
     } else if (document.documentElement.webkitRequestFullscreen) { // Safari
       document.documentElement.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
     }
-  } else {
-    if (document.exitFullscreen) {
-      document.exitFullscreen();
-    } else if (document.msExitFullscreen) { // IE11
-      document.msExitFullscreen();
-    } else if (document.mozCancelFullScreen) { // Firefox
-      document.mozCancelFullScreen();
-    } else if (document.webkitExitFullscreen) { // Safari
-      document.webkitExitFullscreen();
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.msExitFullscreen) { // IE11
+        document.msExitFullscreen();
+      } else if (document.mozCancelFullScreen) { // Firefox
+        document.mozCancelFullScreen();
+      } else if (document.webkitExitFullscreen) { // Safari
+        document.webkitExitFullscreen();
+      }
     }
   }
+
+  MainApp.prototype.onToggleSound = function(){
+    var volume = (this.globalListener.getMasterVolume() === 1) ? 0:1;
+    this.globalListener.setMasterVolume(volume);
   }
 
   MainApp.prototype.render = function(){
