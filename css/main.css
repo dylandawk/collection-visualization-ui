@@ -79,9 +79,19 @@ button.inverse:hover {
   z-index: 10000;
   display: none;
 }
-.intro.active {
+.intro.active,
+.intro.story {
   display: block;
 }
+
+.intro.active .story-buttons{
+  display: none;
+}
+.intro.story .intro-buttons,
+.intro-story .intro-text{
+  display: none;
+}
+
 .intro > div {
   text-align: center;
   display: flex;
@@ -114,10 +124,12 @@ button.inverse:hover {
 .app.is-loading .intro-buttons {
   display: none;
 }
-.intro-buttons {
+.intro-buttons,
+.story-buttons {
   margin: 2rem 0;
 }
-.intro-button {
+.intro-button,
+.story-start {
   text-align: center;
   margin-left : auto;
   margin-right: auto;
@@ -132,10 +144,12 @@ button.inverse:hover {
   display: block;
   cursor: pointer;
 }
-.intro-button:hover{
+.intro-button:hover,
+.story-start:hover{
   background-color: var(--button-bg-color);
 }
-.intro-button img {
+.intro-button img,
+.story-start img {
   max-width: 24px;
 }
 
@@ -344,6 +358,7 @@ button.inverse:hover {
   width: 40px;
   height: 40px;
   box-sizing: border-box;
+  outline: none;
 }
 .main-nav button::before {
   content: " ";

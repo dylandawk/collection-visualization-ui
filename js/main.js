@@ -75,6 +75,11 @@ var MainApp = (function() {
       _this.onTourStart();
     });
 
+    $('.story-start').on('click', function(e){
+      var storyIndex = parseInt($(this).attr("story-index"));
+      _this.onStoryStart(storyIndex);
+    });
+
     $('.show-menu').on('click', function(){
       _this.$intro.addClass('active');
     });
@@ -87,6 +92,10 @@ var MainApp = (function() {
     $('.show-sound').on('click', function(){
       $(this).toggleClass('active');
     });
+
+    $('.show-stories').on('click', function(){
+      _this.$intro.addClass('story');
+    })
 
 
     $doc.keypress(function(e){
@@ -245,10 +254,16 @@ var MainApp = (function() {
     this.onUserStart();
   };
 
+  MainApp.prototype.onStoryStart = function(val){
+    console.log(`You selected story #${val}`);
+    this.onUserStart();
+  }
+
   MainApp.prototype.onUserStart = function(){
     var _this = this;
 
     this.$intro.removeClass('active');
+    this.$intro.removeClass('story');
     if (this.started) return;
     this.started = true;
 
