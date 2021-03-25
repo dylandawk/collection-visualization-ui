@@ -350,6 +350,20 @@ button.inverse:hover {
   margin: 0 0 0.5rem;
   padding: 0;
 }
+
+.main-nav .collapsible{
+  max-height: 0;
+  overflow: hidden;
+}
+
+.main-nav .show-menu{
+  margin-bottom: 10px;
+}
+
+.main-nav .show-menu.active ~ .collapsible{
+  max-height: 100%;
+}
+
 .main-nav button {
   background: none;
   border: none;
@@ -384,6 +398,11 @@ button.inverse:hover {
 }
 .main-nav button svg .filled {
   fill: var(--text-color);
+}
+
+.main-nav span{
+  display: inline-block;
+  text-align: center;
 }
 
 .main-nav .show-fullscreen .maximize,

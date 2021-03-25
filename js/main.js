@@ -81,7 +81,8 @@ var MainApp = (function() {
     });
 
     $('.show-menu').on('click', function(){
-      _this.$intro.addClass('active');
+      //_this.$intro.addClass('active');
+      $(this).toggleClass('active');
     });
 
     $('.show-fullscreen').on('click', function(){
