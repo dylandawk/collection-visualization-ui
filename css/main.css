@@ -9,9 +9,61 @@
 @font-face {
   font-family: 'Work Sans';
   font-display: swap;
+  font-weight: 400;
   src: url(../fonts/WorkSans.woff2) format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
+/* latin Light */
+@font-face {
+  font-family: 'Work Sans';
+  font-display: swap;
+  font-weight: 300;
+  src: url(../fonts/WorkSansLight.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* latin ExtraLight */
+@font-face {
+  font-family: 'Work Sans';
+  font-display: swap;
+  font-weight: 200;
+  src: url(../fonts/WorkSansExtraLight.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* latin Thin */
+@font-face {
+  font-family: 'Work Sans';
+  font-display: swap;
+  font-weight: 100;
+  src: url(../fonts/WorkSansThin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* belleza-regular - latin */
+@font-face {
+  font-family: 'Belleza';
+  font-style: normal;
+  font-weight: 400;
+  src: url('../fonts/Belleza.eot'); /* IE9 Compat Modes */
+  src: local(''),
+       url('../fonts/Belleza.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+       url('../fonts/Belleza.woff2') format('woff2'), /* Super Modern Browsers */
+       url('../fonts/Belleza.woff') format('woff'), /* Modern Browsers */
+       url('../fonts/Belleza.ttf') format('truetype'), /* Safari, Android, iOS */
+       url('../fonts/Belleza.svg#Belleza') format('svg'); /* Legacy iOS */
+}
+/* roboto-300 - latin */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 300;
+  src: url('../fonts/roboto-v20-latin-300.eot'); /* IE9 Compat Modes */
+  src: local(''),
+       url('../fonts/roboto-v20-latin-300.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+       url('../fonts/roboto-v20-latin-300.woff2') format('woff2'), /* Super Modern Browsers */
+       url('../fonts/roboto-v20-latin-300.woff') format('woff'), /* Modern Browsers */
+       url('../fonts/roboto-v20-latin-300.ttf') format('truetype'), /* Safari, Android, iOS */
+       url('../fonts/roboto-v20-latin-300.svg#Roboto') format('svg'); /* Legacy iOS */
+}
+
 
 body {
   background: var(--bg-color);
@@ -114,19 +166,23 @@ button:focus {
 }
 .intro h1 {
   margin: 0.67em 0 0.6rem;
-  font-weight: normal;
+  font-family: 'Roboto';
+  font-weight: var(--light-weight);
 }
 .intro h1 strong {
   color: var(--bg-secondary-light-color);
+  font-family: 'Belleza';
+  font-size: 1.1em;
 }
 .intro h2 {
   font-size: 1.3rem;
   margin-top: 0;
   margin-bottom: 2rem;
-  font-weight: normal;
+  font-weight: var(--light-weight);
 }
 .intro p {
   line-height: 1.5;
+  font-weight: var(--thin-weight);
 }
 
 .app.is-loading .intro-buttons {
@@ -139,6 +195,7 @@ button:focus {
 .intro-button,
 .story-start {
   text-align: center;
+  font-weight: var(--extra-light-weight);
   margin-left : auto;
   margin-right: auto;
   margin-top: 15px;
@@ -180,6 +237,10 @@ button:focus {
 }
 .loading p + p {
   margin-top: -0.5rem;
+  font-weight: var(--thin-weight);
+}
+.loading .loading-text{
+  font-weight: var(--regular-weight);
 }
 .app.is-loading .loading {
   display: block;
@@ -270,7 +331,7 @@ button:focus {
   margin: 0 0 0.8rem;
   line-height: 1;
   font-size: 1.2rem;
-  font-weight: normal;
+  font-weight: var(--light-weight);
   color: var(--text-dark-color);
 }
 .radio-button-form label {
@@ -429,9 +490,11 @@ button:focus {
   height: 100%;
   z-index: 10000;
   background: rgba(0,0,0,0.8);
+  font-weight: var(--light-weight);
 }
 .instructions h1 {
   font-size: 1.8rem;
+  font-weight: var(--light-weight);
 }
 .instructions ul {
   list-style: none;
@@ -440,9 +503,13 @@ button:focus {
 }
 .instructions li {
   padding: 1rem 0;
+  font-weight: var(--thin-weight)
 }
 .instructions strong {
   color: var(--bg-secondary-light-color);
+}
+.instructions span{
+  font-weight: var(--regular-weight);
 }
 .instructions .close-x {
   position: absolute;
