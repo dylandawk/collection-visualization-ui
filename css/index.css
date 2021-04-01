@@ -201,11 +201,13 @@ strong{
   margin-top: 10px;
   text-align: left;
 }
+.flex-item a,
 .flex-item a:hover,
 .flex-item a:active,
 .flex-item a:visited
 {
   color: white;
+  text-decoration: none;
 }
 .flex-item p{
   font-size: 17px;
