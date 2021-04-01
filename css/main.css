@@ -122,10 +122,21 @@ button:focus {
 .app.is-loading .intro-buttons {
   display: none;
 }
-.intro-buttons {
+.story-buttons {
+  display: none;
+}
+.intro.stories .intro-buttons {
+  display: none;
+}
+.intro.stories .story-buttons {
+  display: block;
+}
+.intro-buttons,
+.story-buttons {
   margin: 2rem 0;
 }
-.intro-button {
+.intro-button,
+.story-button {
   text-align: center;
   margin-left : auto;
   margin-right: auto;
@@ -140,10 +151,12 @@ button:focus {
   display: block;
   cursor: pointer;
 }
-.intro-button:hover{
+.intro-button:hover,
+.story-button:hover {
   background-color: var(--button-bg-color);
 }
-.intro-button img {
+.intro-button img,
+.story-button img {
   max-width: 24px;
 }
 
@@ -416,7 +429,7 @@ button:focus {
 .instructions strong {
   color: var(--bg-secondary-light-color);
 }
-.instructions .close-x {
+button.close-x {
   position: absolute;
   float: right;
   width: 40px;
@@ -431,9 +444,10 @@ button:focus {
   background-color: transparent;
   outline:none;
   cursor: pointer;
+  padding: 0;
 }
-.instructions .close-x:hover {
-  color: var(--notice-color);
+button.close-x:hover {
+  color: var(--bg-secondary-light-color);
 }
 .instructions > div {
   border-style: solid;
@@ -625,7 +639,7 @@ button:focus {
   position: absolute;
   z-index: 1000;
   width: 800px;
-  margin-left: -450px;
+  margin-left: -400px;
   left: 50%;
   bottom: 1rem;
   display: none;
@@ -711,6 +725,16 @@ button:focus {
 }
 .text-slide {
   padding: 0 1rem;
+}
+.text-slide dt {
+  padding: 1rem 0;
+}
+.text-slide dd {
+  font-weight: bold;
+  font-size: 2rem;
+  color: var(--bg-secondary-light-color);
+  margin: 0;
+  padding-bottom: 2rem;
 }
 .slides-nav {
 
@@ -889,12 +913,12 @@ button.toggle-object {
   height: 60px;
   line-height: 60px;
   text-align: center;
-  background: url(../img/ico-audio-blue-bg.png);
+  background: url(../img/ico-audio-play.png);
   background-size: cover;
   background-repeat: no-repeat;
 }
 button.toggle-audio.active {
-  background-image: url(../img/ico-audio-white-bg.png);
+  background-image: url(../img/ico-audio-pause.png);
 }
 button.toggle-object {
   background-image: url(../img/ico-3d-blue-bg.png);
@@ -954,6 +978,7 @@ button.item-close {
   background: none;
   color: var(--text-color);
   text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+  z-index: 100;
 }
 button.item-close:hover {
   background: none;
@@ -1045,6 +1070,63 @@ button.item-close:hover {
 }
 .touchpad.touching .touchpad-handle {
   transition: none;
+}
+
+.guide-container {
+  position: absolute;
+  z-index: 999;
+  width: 800px;
+  margin-left: -400px;
+  left: 50%;
+  top: 1rem;
+  display: none;
+  opacity: 0;
+  animation: fadeIn ease 2s;
+  animation-fill-mode: forwards;
+  background: rgba(0,0,0,0.9);
+  padding: 1rem 2rem 0.5rem;
+  border: 2px solid var(--bg-lighter-color);
+  box-sizing: border-box;
+}
+@media screen and (max-width: 860px) {
+  .guide-container {
+    width: auto;
+    left: 1rem;
+    right: 1rem;
+  }
+}
+.guide-container.active {
+  display: block;
+}
+.guide-steps {
+  padding: 0 0 0 2rem;
+  line-height: 1.4;
+}
+.guide-step {
+  display: none;
+  opacity: 0;
+  animation: fadeIn ease 2s;
+  animation-fill-mode: forwards;
+}
+.guide-step.active {
+  display: block;
+}
+.guide-container button.close-x {
+  top: -5px;
+  right: -5px;
+}
+.guide-container .slides-buttons button {
+  bottom: 15%;
+}
+.guide-container .slides-buttons button.slide-prev {
+  left: -5px;
+}
+.guide-container .slides-buttons button.slide-next {
+  right: -5px;
+}
+.guide-container .slides-buttons .arrow-icon {
+  width: 30px;
+  height: 30px;
 }
 
 @keyframes fadeIn {

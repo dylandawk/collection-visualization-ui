@@ -22,6 +22,7 @@ var Collection = (function() {
     this.isViewTransitioning = false;
     this.minAlpha = this.opt.ui.minAlpha;
     this.$el = $(this.opt.el);
+    this.onChangeViewFinished = false;
 
     this.ui = this.opt.ui;
 
@@ -29,8 +30,11 @@ var Collection = (function() {
     this.storyManager = new StoryManager({"stories": this.opt.stories});
 
     var views = this.opt.views;
+    var i = 0;
     _.each(views, function(view, key){
       views[key].key = key;
+      views[key].index = key;
+      i += 1;
     })
     this.views = views;
 
@@ -39,10 +43,32 @@ var Collection = (function() {
     this.soundSets = {};
   };
 
-  Collection.prototype.deselectActiveItem = function(){
-    if (this.itemManager.itemIndex < 0 || this.itemManager.itemIndex===false) return;
+  Collection.prototype.changeView = function(key, onFinished){
+    if (key == this.currentViewKey) return true;
+
+    if (!_.has(this.views, key) || !this.$viewOptions || !this.$viewOptions.length || this.isViewTransitioning) return false;
+
+    var $input = $('.view-option[value="'+key+'"]');
+    if (!$input.length) return false;
+
+    var viewIndex = parseInt($input.attr('data-index'));
+
+    this.$viewOptions.eq(viewIndex).prop('checked', true);
+    this.$viewOptions.eq(viewIndex).focus();
+
+    if (onFinished) this.onChangeViewFinished = onFinished;
+    this.onViewOptionChange(this.$viewOptions.eq(viewIndex));
+
+    return true;
+  };
+
+  Collection.prototype.deselectActiveItem = function(onFinished){
+    if (this.itemManager.itemIndex < 0 || this.itemManager.itemIndex===false) {
+      onFinished && onFinished();
+      return;
+    };
     var flyToLastPosition = true;
-    this.controls && this.controls.releaseAnchor(flyToLastPosition);
+    this.controls && this.controls.releaseAnchor(flyToLastPosition, onFinished);
     var itemIndex = this.itemManager.releaseSelectedItem();
     this.updateItemAlpha(itemIndex, 1, 10); // show the current item
   };
@@ -138,7 +164,30 @@ var Collection = (function() {
     targetPosition.x = MathUtil.clamp(targetLookAtPosition.x, xMin, xMax);
     targetLookAtPosition.y = this.controls.lookAtPosition.y;
 
+    targetLookAtPosition = false; // don't lock it in for now
     this.controls.flyTo(targetPosition, targetLookAtPosition, transitionDuration);
+  };
+
+  Collection.prototype.jumpToTime = function(year){
+    var currentView = this.views[this.currentViewKey];
+
+    if (!currentView.yearRange) return;
+
+    var bounds = currentView.bounds;
+    var minYear = currentView.yearRange[0];
+    var maxYear = currentView.yearRange[1];
+    var t = MathUtil.norm(year, minYear, maxYear);
+
+    var originPosition = this.camera.position.clone();
+    var targetPosition = originPosition.clone();
+    targetPosition.z = MathUtil.lerp(bounds[2], bounds[3], t);
+
+    var distance = originPosition.distanceTo(targetPosition);
+    var unitsPerSecond = 1000;
+    var duration = parseInt(distance / unitsPerSecond * 1000);
+
+    var targetLookAtPosition = false;
+    this.controls.flyTo(targetPosition, targetLookAtPosition, duration);
   };
 
   Collection.prototype.load = function(){
@@ -597,7 +646,7 @@ var Collection = (function() {
     if (this.currentViewIndex===index) return false;
 
     this.currentViewIndex = index;
-    $(document).trigger('change-view', value);
+    $(document).trigger('view-changed', value);
     return true;
   };
 
@@ -608,6 +657,8 @@ var Collection = (function() {
 
   Collection.prototype.setControls = function(controls){
     this.controls = controls;
+
+    if (this.opt.guide) this.guide = new Guide({"steps": this.opt.guide, "inputMode": controls.device});
   };
 
   Collection.prototype.stepViewOption = function(step){
@@ -678,6 +729,9 @@ var Collection = (function() {
       this.updatePositionTimeout = setTimeout(function(){
         _this.updatePositions(view, transitionDuration, 4.0);
       }, transitionDuration);
+
+      // close the guide if it's open
+      this.guide && this.guide.close();
 
     } else if (closedStoryKey !== false) {
       // reset filters
