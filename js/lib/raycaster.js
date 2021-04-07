@@ -6,7 +6,7 @@ var Raycaster = (function() {
     var defaults = {
       highlightWidth: 16,
       highlightThickness: 2,
-      highlightColor: 0xf57542,
+      highlightColor: 0x91EFF0,
       near: 0.001,
       far: 1000, // increase this to hit objects farther away
       points: false, // required!
@@ -37,6 +37,7 @@ var Raycaster = (function() {
     var thetaSegments = 32; // 4 segments to make a square
     var geometry = new THREE.RingGeometry( innerRadius, outerRadius, thetaSegments );
     var material = new THREE.MeshBasicMaterial( { color: this.opt.highlightColor, side: THREE.DoubleSide } );
+    
     // var geometry = new THREE.SphereGeometry( 100, 32, 32 );
     // var material = new THREE.MeshBasicMaterial( {color: 0xff0000} );
     var mesh = new THREE.Mesh( geometry, material );
